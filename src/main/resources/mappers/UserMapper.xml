@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.corpIns.mapper.UserMapper">
+    <select id="selectUserByEmailAndPasswordHash" parameterType="map" resultType="com.corpIns.dto.User">
+        SELECT user_sno, email, password_hash
+        FROM users
+        WHERE email = #{email}
+        AND password_hash = #{password_hash}
+    </select>
+</mapper>
+
