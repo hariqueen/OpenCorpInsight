@@ -107,8 +107,6 @@
     <input type="text" id="email" name="email" placeholder="이메일" required>
     <div id="emailError" class="error-msg">올바른 이메일 형식을 입력하세요.</div>
 
-    <input type="text" name="nickname" placeholder="닉네임" required>
-
     <input type="password" name="password" placeholder="비밀번호" required>
 
     <input type="password" name="confirmPassword" placeholder="비밀번호 확인" required>

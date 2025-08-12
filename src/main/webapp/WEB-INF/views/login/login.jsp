@@ -99,7 +99,7 @@
 <form id="loginForm" class="login-box">
     <h2>로그인</h2>
     <input type="text" name="email" placeholder="아이디를 입력하세요" required>
-    <input type="password" name="password_hash" placeholder="비밀번호를 입력하세요" required>
+    <input type="password" name="password" placeholder="비밀번호를 입력하세요" required>
     <button type="submit" class="login-btn">LOGIN</button>
 </form>
 

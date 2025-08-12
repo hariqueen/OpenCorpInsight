@@ -4,7 +4,11 @@ import com.corpIns.dto.User;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import java.util.Map;
+
 @Mapper
 public interface UserMapper {
-    User selectUserByEmailAndPasswordHash(@Param("email") String email, @Param("password_hash") String password_hash);
+    User selectUserByEmail(@Param("email") String email);
+
+    void insertUser(Map<String, Object> userData);
 }

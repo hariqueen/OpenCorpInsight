@@ -177,7 +177,8 @@
                 resultBody.innerHTML = `<tr><td colspan="4">오류가 발생했습니다. (${error.message})</td></tr>`;
             });
     });
-    const FINAL_API = "https://xp5bdl3ftqldheyokoroxvcocm0eorbe.lambda-url.ap-northeast-2.on.aws/";
+    // const FINAL_API = "https://xp5bdl3ftqldheyokoroxvcocm0eorbe.lambda-url.ap-northeast-2.on.aws/";
+    const FINAL_API = "http://43.203.170.37:8080/api/chat";
 
     async function selectCompany(corpCode, corpName, ceoName, businessName, stockCode, listed) {
         const startDate = window.defaultStartDate || "20190101";

@@ -2,7 +2,7 @@ package com.corpIns.dto;
 
 public class User {
     private String email;
-    private String password_hash;
+    private String passwordHash;
     // Getter / Setter
     public String getEmail() {
         return email;
@@ -10,10 +10,10 @@ public class User {
     public void setEmail(String email) {
         this.email = email;
     }
-    public String getPassword_hash() {
-        return password_hash;
+    public String getPasswordHash() {
+        return passwordHash;
     }
-    public void setPassword_hash(String password_hash) {
-        this.password_hash = password_hash;
+    public void setPasswordHash(String password_hash) {
+        this.passwordHash = passwordHash;
     }
 }

@@ -4,6 +4,7 @@ import com.corpIns.dto.User;
 import com.corpIns.service.UserService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,6 +18,8 @@ import java.util.Map;
 @Controller
 public class LoginController {
     private final UserService userService;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Autowired
     public LoginController(UserService userService) {
@@ -33,15 +36,30 @@ public class LoginController {
         return "login/join"; // /WEB-INF/views/login/join.jsp
     }
 
+    @PostMapping("/joinAction")
+    public String joinAction(@RequestParam String email,
+                             @RequestParam String password) {
+        // 비밀번호 암호화
+        String passwordHash = passwordEncoder.encode(password);
+
+        Map<String, Object> param = new HashMap<>();
+        param.put("email", email);
+        param.put("password_hash", passwordHash);
+
+        userService.insertUser(param);
+
+        return "login/login";
+    }
+
     @PostMapping("/loginAction")
     @ResponseBody
     public Map<String, Object> loginAction(@RequestParam String email,
-                                           @RequestParam String password_hash,
+                                           @RequestParam String password,
                                            HttpSession session) {
         Map<String, Object> result = new HashMap<>();
-        User user = userService.findByEmailAndPassword(email, password_hash);
+        User user = userService.findByEmail(email);
 
-        if (user != null) {
+        if (user != null && passwordEncoder.matches(password, user.getPasswordHash())) {
             session.setAttribute("loginUser", user);
             result.put("status", "success");
         } else {
@@ -50,6 +68,7 @@ public class LoginController {
         }
         return result;
     }
+
 
     @PostMapping("/logout")
     @ResponseBody
