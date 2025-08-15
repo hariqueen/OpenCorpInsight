@@ -94,23 +94,12 @@ function onCompanySelected(corp) {
     }
 }
 
-// API 호출 후 compareDetail 페이지 이동
-async function compareAndGoDetail(company1, company2) {
+// compareDetail 페이지로 이동
+function compareAndGoDetail(company1, company2) {
     try {
-        // API 호출
-        const response = await fetch('/api/compareCompanies', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ company1, company2 })
-        });
+        console.log('비교할 기업들:', { company1, company2 });
 
-        if (!response.ok) throw new Error(`서버 응답 오류: ${response.status}`);
-
-        const result = await response.json();
-        console.log('기업 비교 결과:', result);
-
-        // 필요시 result를 세션/로컬에 저장하거나 query로 전달 가능
-        // 예제는 선택한 회사 정보 query로 전달
+        // 선택한 회사 정보를 query로 전달
         const queryParams = new URLSearchParams({
             corp1Code: company1.corpCode,
             corp1Name: company1.corpName || company1.corp_name,
@@ -122,11 +111,12 @@ async function compareAndGoDetail(company1, company2) {
             corp2Business: company2.businessName || company2.business_name
         });
 
+        // compareDetail 페이지로 이동
         window.location.href = `/compareDetail?${queryParams.toString()}`;
 
     } catch (err) {
-        console.error('기업 비교 중 오류 발생:', err);
-        alert('기업 비교 중 오류가 발생했습니다.');
+        console.error('페이지 이동 중 오류 발생:', err);
+        alert('페이지 이동 중 오류가 발생했습니다.');
     }
 }
 

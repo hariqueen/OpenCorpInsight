@@ -82,8 +82,6 @@ public class LoginController {
         return result;
     }
 
-
-
     @PostMapping("/loginAction")
     @ResponseBody
     public Map<String, Object> loginAction(@RequestParam String email,
@@ -102,7 +100,6 @@ public class LoginController {
         return result;
     }
 
-
     @PostMapping("/logout")
     @ResponseBody
     public Map<String, String> logout(HttpSession session) {
@@ -111,7 +108,4 @@ public class LoginController {
         result.put("status", "ok");
         return result;
     }
-
-
-
 }

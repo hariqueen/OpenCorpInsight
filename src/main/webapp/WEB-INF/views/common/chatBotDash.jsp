@@ -545,38 +545,27 @@
         let revenueChart = null;
         let profitChart = null;
 
-        // 🔧 API 호출 함수
+        // 🔧 API 호출 함수 (GET 방식으로 변경)
         async function fetchDashboardData(corpCode, startYear = '2020', endYear = '2023') {
             try {
                 console.log(`대시보드 데이터 요청: ${corpCode} (${startYear}-${endYear})`);
+                
+                // GET 방식 API 호출
+                const url = `${API_BASE_URL}/api/dashboard/${corpCode}?start_year=${startYear}&end_year=${endYear}`;
+                console.log(`🌐 API 호출: ${url}`);
 
-                const requestData = {
-                    corp_code: corpCode,
-                    bgn_de: startYear,
-                    end_de: endYear,
-                    user_sno: 'web_user',
-                    nickname: '웹사용자',
-                    difficulty: 'intermediate',
-                    interest: '기술주',
-                    purpose: '투자분석'
-                };
-
-                const response = await fetch(`${API_BASE_URL}/api/dashboard`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(requestData)
-                });
+                const response = await fetch(url);
 
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => ({}));
-                    throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+                    throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
                 }
 
                 const data = await response.json();
                 console.log('대시보드 데이터 수신:', data);
-                return data;
+                
+                // GET API는 data.data 구조로 응답
+                return data.data;
 
             } catch (error) {
                 console.error('대시보드 데이터 요청 실패:', error);
@@ -667,12 +656,12 @@
         // 🔧 차트 생성 함수들
         function createRevenueChart(data) {
             const ctx = document.getElementById('revenueChart').getContext('2d');
-
+            
             // 기존 차트 삭제
             if (revenueChart) {
                 revenueChart.destroy();
             }
-
+            
             revenueChart = new Chart(ctx, {
                 type: 'line',
                 data: {
@@ -714,12 +703,12 @@
 
         function createProfitChart(data) {
             const ctx = document.getElementById('profitChart').getContext('2d');
-
+            
             // 기존 차트 삭제
             if (profitChart) {
                 profitChart.destroy();
             }
-
+            
             profitChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
@@ -848,16 +837,16 @@
         // 🌟 외부에서 호출할 수 있는 메인 함수
         window.displayDashboard = async function(corpCode, startYear = '2020', endYear = '2023') {
             console.log(`대시보드 표시 요청: ${corpCode}`);
-
+            
             showLoading();
-
+            
             try {
                 const dashboardData = await fetchDashboardData(corpCode, startYear, endYear);
                 currentDashboardData = dashboardData;
                 renderDashboard(dashboardData);
-
+                
                 console.log('대시보드 표시 완료');
-
+                
             } catch (error) {
                 console.error('대시보드 표시 실패:', error);
                 showError(`대시보드 로드 실패: ${error.message}`);
@@ -876,14 +865,14 @@
 
         function handleMouseMove(e) {
             if (!isResizing) return;
-
+            
             const container = document.querySelector('.split-container');
             const leftPanel = document.querySelector('.left-panel');
             const rightPanel = document.querySelector('.right-panel');
-
+            
             const containerRect = container.getBoundingClientRect();
             const newLeftWidth = ((e.clientX - containerRect.left) / containerRect.width) * 100;
-
+            
             if (newLeftWidth > 20 && newLeftWidth < 80) {
                 leftPanel.style.flex = `0 0 ${newLeftWidth}%`;
                 rightPanel.style.flex = `0 0 ${100 - newLeftWidth}%`;
@@ -905,12 +894,12 @@
         function addMessage(role, content) {
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${role}`;
-
+            
             messageDiv.innerHTML = `
                 <div class="message-avatar">${role == 'user' ? '홍' : 'AI'}</div>
                 <div class="message-content">${content}</div>
             `;
-
+            
             messagesContainer.appendChild(messageDiv);
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
@@ -918,38 +907,38 @@
         async function sendMessage() {
             const message = chatInput.value.trim();
             if (!message) return;
-
+            
             // 사용자 메시지 추가
             addMessage('user', message);
             chatInput.value = '';
             chatInput.style.height = 'auto';
-
+            
             // 전송 버튼 비활성화
             sendButton.disabled = true;
-
+            
             // 로딩 메시지
             addMessage('assistant', '분석 중입니다... 잠시만 기다려주세요! 🔍');
-
+            
             try {
                 // Flask 서버로 메시지 전송
                 const response = await sendChatMessage(message);
-
+                
                 // 로딩 메시지 제거
                 const lastMessage = messagesContainer.lastElementChild;
                 if (lastMessage && lastMessage.textContent.includes('분석 중입니다')) {
                     lastMessage.remove();
                 }
-
+                
                 // AI 응답 추가
                 addMessage('assistant', response);
-
+                
             } catch (error) {
                 // 로딩 메시지 제거
                 const lastMessage = messagesContainer.lastElementChild;
                 if (lastMessage && lastMessage.textContent.includes('분석 중입니다')) {
                     lastMessage.remove();
                 }
-
+                
                 // 에러 메시지 추가
                 addMessage('assistant', `죄송합니다. 현재 응답을 생성할 수 없습니다. 서버 연결을 확인해주세요. (${error.message})`);
             } finally {
@@ -959,7 +948,7 @@
         }
 
         sendButton.addEventListener('click', sendMessage);
-
+        
         chatInput.addEventListener('keypress', function(e) {
             if (e.key == 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -1038,12 +1027,12 @@
         // 🚀 페이지 로드 시 URL 파라미터 기반 데이터 로드
         window.addEventListener('load', function() {
             console.log('페이지 로드 완료');
-
+            
             const corpCodeFromURL = getCorpCodeFromURL();
-
+            
             if (corpCodeFromURL) {
                 console.log(`URL에서 기업코드 발견: ${corpCodeFromURL}`);
-
+                
                 // 실제 API 호출
                 displayDashboard(corpCodeFromURL, '2020', '2023');
             } else {
@@ -1056,7 +1045,7 @@
         function showWaitingState() {
             document.getElementById('companyName').textContent = '🏢 기업 분석 대시보드';
             document.getElementById('analysisPeriod').textContent = 'URL에 ?corpCode=기업코드 파라미터를 추가해주세요';
-
+            
             // 뉴스 영역에 대기 메시지 표시
             const newsArticles = document.getElementById('newsArticles');
             if (newsArticles) {
@@ -1070,7 +1059,7 @@
                     </div>
                 `;
             }
-
+            
             hideLoading();
             document.getElementById('dashboard').style.display = 'block';
         }
@@ -1092,7 +1081,7 @@
         };
 
         // 🌐 외부 연동용 함수들 (POST 방식 지원)
-
+        
         // 1. 기업 선택 시 호출되는 함수 (팝업에서 사용)
         window.onCompanySelected = function(corpCode) {
             console.log(`🏢 기업 선택됨: ${corpCode}`);
@@ -1102,10 +1091,10 @@
         // 2. 기업 분석 시작 함수 (지윤님 코드와 호환)
         window.startChatWithCompany = async function(corpCode) {
             console.log(`🚀 기업 분석 시작: ${corpCode}`);
-
+            
             try {
                 await displayDashboard(corpCode, '2020', '2023');
-
+                
                 if (currentDashboardData) {
                     console.log('✅ 기업 분석 준비 완료');
                     return {
@@ -1141,7 +1130,7 @@
         console.log('    - window.startChatWithCompany(corpCode): 기업 분석 시작');
         console.log('    - window.getCurrentCompanyData(): 현재 기업 데이터 반환');
         console.log(`🌐 배포된 서버: ${API_BASE_URL}`);
-
+        
         const currentCorpCode = getCorpCodeFromURL();
         if (currentCorpCode) {
             console.log(`🏢 현재 기업코드: ${currentCorpCode}`);

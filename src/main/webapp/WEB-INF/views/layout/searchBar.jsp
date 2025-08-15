@@ -73,16 +73,29 @@ window.onCompanySelected = async function(company) {
     console.log('선택된 기업:', company);
 
     try {
-        // GET URL 생성 (start_year, end_year 필요하면 추가)
-        const startYear = 2020; // 예시, 필요하면 input에서 가져오기
-        const endYear = 2023;   // 예시
-        const query = new URLSearchParams({
-            corp_code: company.corp_code,
-            start_year: startYear,
-            end_year: endYear
-        }).toString();
+        // 대시보드 API 호출
+        const dashboardResp = await fetch('/api/dashboard', {
+            method:'POST',
+            headers:{ 'Content-Type':'application/json' },
+            body: JSON.stringify({ corp_code: company.corp_code, user_sno: getCurrentUserSno() })
+        });
+        const dashboardData = await dashboardResp.json();
+        console.log('대시보드 데이터:', dashboardData);
 
-        // chatBotDash로 바로 이동
+        // Chatbot API 호출
+        await fetch('/api/chat', {
+            method:'POST',
+            headers:{ 'Content-Type':'application/json' },
+            body: JSON.stringify({
+                chat_type:'company_analysis',
+                message:`${company.corp_name} 기업 분석`,
+                user_sno:getCurrentUserSno(),
+                company_data: dashboardData
+            })
+        });
+
+        // 필요 시 compareDetail 페이지로 이동
+        const query = new URLSearchParams({ corp_code: company.corp_code }).toString();
         window.location.href = `http://43.203.170.37:5001/chatBotDash?${query}`;
 
     } catch(err){
@@ -90,7 +103,6 @@ window.onCompanySelected = async function(company) {
         alert('기업 선택 처리 중 오류 발생');
     }
 };
-
 
 // 로컬 스토리지에서 user_sno 가져오기
 function getCurrentUserSno() {
