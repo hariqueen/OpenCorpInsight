@@ -122,7 +122,7 @@
 
 <script>
 // 서버 주소 설정
-const isLocal = location.hostname==='localhost' || location.hostname==='127.0.0.1';
+const isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
 const SERVER_BASE_URL = isLocal ? 'http://127.0.0.1:5001' : 'http://43.203.170.37:5001';
 const API_SEARCH = `${SERVER_BASE_URL}/api/company/search`;
 
@@ -130,9 +130,11 @@ const searchInput = document.getElementById('popupSearchInput');
 const searchBtn = document.getElementById('popupSearchBtn');
 const resultBody = document.getElementById('popupResultBody');
 
-// 검색 버튼 클릭 또는 엔터
+// 검색 버튼 클릭 또는 엔터 이벤트
 searchBtn.addEventListener('click', searchCompany);
-searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') searchCompany(); });
+searchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') searchCompany();
+});
 
 async function searchCompany() {
     const keyword = searchInput.value.trim();
@@ -144,13 +146,8 @@ async function searchCompany() {
     }
 
     try {
-        // POST 방식으로 API 호출
-        const resp = await fetch(API_SEARCH, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: keyword })
-        });
-
+        // GET 방식으로 API 호출
+        const resp = await fetch(`${API_SEARCH}?name=${encodeURIComponent(keyword)}`);
         const response = await resp.json();
 
         if (response.status !== 'success' || !response.data || response.data.length === 0) {
@@ -158,7 +155,7 @@ async function searchCompany() {
             return;
         }
 
-        // 여러 결과 처리
+        // 결과 테이블 채우기
         const items = response.data;
         resultBody.innerHTML = ''; // 초기화
         items.forEach(item => {
@@ -187,6 +184,7 @@ function selectCompany(corp_code, corp_name) {
         alert('부모 페이지가 없습니다.');
     }
 }
+
 </script>
 </body>
 </html>
