@@ -2,165 +2,157 @@
 <html>
 <head>
     <title>프로필 세팅</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+   <style>
+       /* 공통 */
+       * { margin:0; padding:0; box-sizing:border-box; }
+       body {
+           font-family: 'Pretendard', sans-serif;
+           background: #161e63;
+           min-height: 100vh;
+           display: flex;
+           align-items: center;
+           justify-content: center;
+           padding: 20px;
+           color: white;
+       }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 50%, #2563eb 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
+       .signup-container {
+           background-color: rgba(255, 255, 255, 0.05);
+           border-radius: 20px;
+           padding: 40px;
+           width: 100%;
+           max-width: 500px;
+           box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+           text-align: center;
+           animation: fadeIn 1s ease;
+       }
 
-        .signup-container {
-            background: white;
-            border-radius: 20px;
-            padding: 40px;
-            width: 100%;
-            max-width: 500px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-        }
+       .title {
+           font-size: 2rem;
+           font-weight: 700;
+           color: #00ffff;
+           margin-bottom: 10px;
+           animation: glowText 1.5s infinite alternate;
+       }
 
-        .title {
-            text-align: center;
-            color: #1e40af;
-            font-size: 28px;
-            font-weight: 700;
-            margin-bottom: 10px;
-        }
+       .subtitle {
+           font-size: 16px;
+           color: #a5b4fc;
+           margin-bottom: 30px;
+       }
 
-        .subtitle {
-            text-align: center;
-            color: #64748b;
-            font-size: 16px;
-            margin-bottom: 40px;
-        }
+       .form-group { margin-bottom: 20px; text-align: left; }
 
-        .form-group {
-            margin-bottom: 25px;
-        }
+       .form-label {
+           display: block;
+           font-size: 14px;
+           font-weight: 600;
+           color: #e0e7ff;
+           margin-bottom: 5px;
+       }
 
-        .form-label {
-            display: block;
-            color: #374151;
-            font-weight: 600;
-            margin-bottom: 8px;
-            font-size: 14px;
-        }
+       /* input 필드 - 흰색 */
+       .form-input {
+           width: 100%;
+           padding: 12px 15px;
+           border-radius: 10px;
+           font-size: 16px;
+           outline: none;
+           border: none;
+           background-color: white;
+           color: #161e63;
+       }
 
-        .form-input {
-            width: 100%;
-            padding: 15px 20px;
-            border: 2px solid #e5e7eb;
-            border-radius: 12px;
-            font-size: 16px;
-            transition: all 0.3s ease;
-            background-color: #f9fafb;
-        }
+       .form-input::placeholder {
+           color: #94a3b8;
+       }
 
-        .form-input:focus {
-            outline: none;
-            border-color: #06b6d4;
-            background-color: white;
-            box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.1);
-        }
+       /* select 박스 - 평소 흰색, 열렸을 때 어둡게 */
+       .form-select {
+           width: 100%;
+           padding: 12px 15px;
+           border-radius: 10px;
+           font-size: 16px;
+           background-color: white;
+           color: #161e63;
+           border: none;
+           outline: none;
+           appearance: none;
+           -webkit-appearance: none;
+           -moz-appearance: none;
+           cursor: pointer;
+           position: relative;
+       }
 
-        .form-select {
-            width: 100%;
-            padding: 15px 20px;
-            border: 2px solid #e5e7eb;
-            border-radius: 12px;
-            font-size: 16px;
-            background-color: #f9fafb;
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
+       /* select open 스타일 */
+       .form-select option {
+           background-color: white;
+           color: #161e63; /* 글씨 검정 */
+       }
 
-        .form-select:focus {
-            outline: none;
-            border-color: #06b6d4;
-            background-color: white;
-            box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.1);
-        }
+       /* 난이도 선택 */
+       .difficulty-group { display: flex; gap: 10px; }
+       .difficulty-option { flex:1; }
+       .difficulty-radio { display:none; }
+       .difficulty-label {
+           display: block;
+           padding: 12px 0;
+           border-radius: 10px;
+           text-align: center;
+           background-color: rgba(255,255,255,0.1);
+           color: white;
+           cursor: pointer;
+           font-weight: 500;
+           transition: all 0.3s ease;
+       }
+       .difficulty-radio:checked + .difficulty-label {
+           background: linear-gradient(90deg, #00ffff, #0077ff);
+           color: #161e63;
+           font-weight: 600;
+           box-shadow: 0 0 10px #00ffff;
+       }
 
-        .difficulty-group {
-            display: flex;
-            gap: 15px;
-        }
+       /* 제출 버튼 */
+       .submit-btn {
+           width: 100%;
+           padding: 14px 0;
+           border: none;
+           border-radius: 30px;
+           font-size: 16px;
+           font-weight: bold;
+           color: #161e63;
+           background: linear-gradient(90deg, #00ffff, #0077ff);
+           cursor: pointer;
+           box-shadow: 0 0 15px rgba(0, 255, 255, 0.6);
+           transition: transform 0.3s ease, box-shadow 0.3s ease;
+           animation: glowPulse 1.5s infinite alternate;
+           margin-top: 20px;
+       }
+       .submit-btn:hover {
+           transform: scale(1.05);
+           box-shadow: 0 0 25px rgba(0, 255, 255, 1);
+       }
 
-        .difficulty-option {
-            flex: 1;
-            position: relative;
-        }
+       /* 애니메이션 */
+       @keyframes glowText {
+           0% { text-shadow: 0 0 5px rgba(0,255,255,0.5); }
+           100% { text-shadow: 0 0 15px rgba(0,255,255,1); }
+       }
+       @keyframes glowPulse {
+           0% { box-shadow: 0 0 10px rgba(0,255,255,0.5); }
+           100% { box-shadow: 0 0 20px rgba(0,255,255,1); }
+       }
+       @keyframes fadeIn {
+           from { opacity:0; transform: translateY(20px); }
+           to { opacity:1; transform: translateY(0); }
+       }
 
-        .difficulty-radio {
-            display: none;
-        }
+       @media (max-width:480px){
+           .signup-container { padding: 30px 20px; }
+           .difficulty-group { flex-direction: column; gap: 10px; }
+       }
+   </style>
 
-        .difficulty-label {
-            display: block;
-            padding: 15px 20px;
-            border: 2px solid #e5e7eb;
-            border-radius: 12px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            background-color: #f9fafb;
-            font-weight: 500;
-        }
-
-        .difficulty-radio:checked + .difficulty-label {
-            background-color: #06b6d4;
-            border-color: #06b6d4;
-            color: white;
-        }
-
-        .difficulty-label:hover {
-            border-color: #06b6d4;
-            background-color: rgba(6, 182, 212, 0.1);
-        }
-
-        .submit-btn {
-            width: 100%;
-            background: linear-gradient(135deg, #06b6d4, #0891b2);
-            color: white;
-            border: none;
-            padding: 18px;
-            border-radius: 12px;
-            font-size: 18px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 30px;
-        }
-
-        .submit-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(6, 182, 212, 0.3);
-        }
-
-        .submit-btn:active {
-            transform: translateY(0);
-        }
-
-        @media (max-width: 480px) {
-            .signup-container {
-                padding: 30px 20px;
-            }
-
-            .difficulty-group {
-                flex-direction: column;
-                gap: 10px;
-            }
-        }
-    </style>
 </head>
 <body>
     <div class="signup-container">
@@ -249,7 +241,7 @@
 
             // 성공 메시지
             alert('회원가입이 완료되었습니다! 🎉');
-
+            window.location.href = '/';
             // 여기에 실제 서버 전송 코드 추가
             // fetch('/api/signup', { method: 'POST', body: JSON.stringify(formData) })
         });

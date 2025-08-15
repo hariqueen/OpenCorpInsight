@@ -1,7 +1,7 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <html>
 <head>
-    <title>기업분석</title>
+    <title>OpenCorpInsight</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;800&display=swap" rel="stylesheet">
     <style>
         body {
@@ -153,8 +153,8 @@
 </head>
 <body>
 <%@ include file="/WEB-INF/views/layout/sideMenu.jsp" %>
-
 <div class="container">
+<%@ include file="/WEB-INF/views/layout/searchBar.jsp" %>
     <h1>어려운 재무제표? 한 줄로 물어보세요.</h1>
     <h1>기업 실적부터 리스크 이슈까지, AI 챗봇이 똑똑하게 정리해드립니다.</h1>
 

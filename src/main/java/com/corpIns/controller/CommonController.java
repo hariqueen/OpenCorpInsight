@@ -29,5 +29,16 @@ public class CommonController {
     public String compSearchPopUp() {
         return "common/modal/compSearchPopUp"; // /WEB-INF/views/common/modal/compSearchPopup.jsp
     }
+    @GetMapping("/chatBotDash")
+    public String chatBotDash() {
+        return "common/chatBotDash"; // /WEB-INF/views/common/chatBotDash.jsp
+    }
+    @GetMapping("/compareDetail")
+    public String compareDetail() {
+        return "common/compareDetail"; // /WEB-INF/views/common/compareDetail.jsp
+    }
+
+
+
 
 }

@@ -121,100 +121,66 @@
 </div>
 
 <script>
-    const apiUrl = '/api/search'; // Spring Boot 프록시 경로
+// 서버 주소 설정
+const isLocal = location.hostname==='localhost' || location.hostname==='127.0.0.1';
+const SERVER_BASE_URL = isLocal ? 'http://127.0.0.1:5001' : 'http://43.203.170.37:5001';
+const API_SEARCH = `${SERVER_BASE_URL}/api/company/search`;
 
-    document.getElementById("popupSearchBtn").addEventListener("click", function () {
-        const keyword = document.getElementById("popupSearchInput").value.trim();
-        const resultBody = document.getElementById("popupResultBody");
+const searchInput = document.getElementById('popupSearchInput');
+const searchBtn = document.getElementById('popupSearchBtn');
+const resultBody = document.getElementById('popupResultBody');
 
-        resultBody.innerHTML = "";
+// 검색 버튼 클릭
+searchBtn.addEventListener('click', searchCompany);
+searchInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter') searchCompany(); });
 
-        if (!keyword) {
-            resultBody.innerHTML = `<tr><td colspan="4">검색어를 입력해 주세요.</td></tr>`;
-            return;
-        }
+function searchCompany() {
+    const keyword = searchInput.value.trim();
+    resultBody.innerHTML = '';
 
-        const params = {
-            q: keyword,
-            limit: "10",
-            bgn_de: "20230701",
-            end_de: "20240930"
-        };
-
-        const queryString = Object.keys(params)
-            .map(key => `${key}=${encodeURIComponent(params[key])}`)
-            .join('&');
-
-        const fullUrl = `${apiUrl}?${queryString}`;
-
-        fetch(fullUrl)
-            .then(response => response.json())
-            .then(data => {
-                if (!data.companies || data.companies.length === 0) {
-                    resultBody.innerHTML = `<tr><td colspan="4">검색 결과가 없습니다.</td></tr>`;
-                    return;
-                }
-
-                let html = '';
-                data.companies.forEach(item => {
-                    html += `
-                    <tr>
-                      <td>
-                        <button onclick="selectCompany('${item.corp_code}', '${item.corp_name}', '${item.ceo_name}', '${item.business_name}')">
-                          선택
-                        </button>
-                      </td>
-                      <td>${item.corp_name}</td>
-                      <td>${item.ceo_name}</td>
-                      <td>${item.business_name}</td>
-                    </tr>
-                    `;
-                });
-                resultBody.innerHTML = html;
-            })
-            .catch(error => {
-                console.error("요청 실패:", error);
-                resultBody.innerHTML = `<tr><td colspan="4">오류가 발생했습니다. (${error.message})</td></tr>`;
-            });
-    });
-    // const FINAL_API = "https://xp5bdl3ftqldheyokoroxvcocm0eorbe.lambda-url.ap-northeast-2.on.aws/";
-    const FINAL_API = "http://43.203.170.37:8080/api/chat";
-
-    async function selectCompany(corpCode, corpName, ceoName, businessName, stockCode, listed) {
-        const startDate = window.defaultStartDate || "20190101";
-        const endDate = window.defaultEndDate || "20241231";
-
-        try {
-            const response = await fetch(FINAL_API, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    corp_code: corpCode,
-                    bgn_de: startDate,
-                    end_de: endDate
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error(`서버 응답 오류: ${response.status}`);
-            }
-
-            const result = await response.json();
-            console.log('서버 응답:', result);
-
-            alert(`회사명: ${corpName}\n대표자명: ${ceoName}\n종목명: ${businessName}\n상장여부: ${listed ? '상장' : '비상장'}`);
-                    window.close();
-
-            // if(window.opener) window.opener.receiveSelectedCompany({ corpCode, corpName, ceoName, businessName, startDate, endDate });
-
-        } catch (error) {
-            console.error('전송 실패:', error);
-            alert('데이터 전송 중 오류가 발생했습니다.');
-        }
+    if(!keyword){
+        resultBody.innerHTML = '<tr><td colspan="4">검색어를 입력해 주세요.</td></tr>';
+        return;
     }
 
+    fetch(`${API_SEARCH}?name=${encodeURIComponent(keyword)}`)
+        .then(res => res.json())
+        .then(response => {
+            if(response.status !== 'success' || !response.data){
+                resultBody.innerHTML = '<tr><td colspan="4">검색 결과가 없습니다.</td></tr>';
+                return;
+            }
+
+            const item = response.data;
+
+            resultBody.innerHTML = `
+                <tr>
+                    <td>
+                        <button onclick="selectCompany('${item.corp_code}', '${item.company_name}')">
+                            선택
+                        </button>
+                    </td>
+                    <td>${item.company_name}</td>
+                    <td>-</td>
+                    <td>-</td>
+                </tr>
+            `;
+        })
+        .catch(err => {
+            console.error(err);
+            resultBody.innerHTML = `<tr><td colspan="4">오류 발생: ${err.message}</td></tr>`;
+        });
+}
+
+//  회사 선택 -> 부모 페이지로 전달 후 팝업 닫기
+function selectCompany(corp_code, corp_name) {
+    if(window.opener && window.opener.onCompanySelected){
+        window.opener.onCompanySelected({ corp_code, corp_name });
+        window.close();
+    } else {
+        alert('부모 페이지가 없습니다.');
+    }
+}
 </script>
 
 </body>

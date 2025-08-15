@@ -1,6 +1,7 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <html>
 <head>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <title>회원가입</title>
     <style>
         body {
@@ -101,7 +102,7 @@
     </style>
 </head>
 <body>
-<form class="join-box" action="/joinAction" method="post" onsubmit="return validateForm()">
+<form  id="joinForm" class="join-box">
     <h2>회원가입</h2>
 
     <input type="text" id="email" name="email" placeholder="이메일" required>
@@ -115,21 +116,36 @@
 </form>
 
 <script>
-    function validateForm() {
-        const email = document.getElementById("email").value.trim();
-        const emailError = document.getElementById("emailError");
+$('#joinForm').on('submit', function(e) {
+   e.preventDefault();
 
-        const emailPattern = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+   // 이메일 유효성 검사
+   const email = $('#email').val().trim();
+   const emailPattern = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+   if (!emailPattern.test(email)) {
+       $('#emailError').show();
+       return;
+   } else {
+       $('#emailError').hide();
+   }
 
-        if (!emailPattern.test(email)) {
-            emailError.style.display = "block";
-            return false;
-        } else {
-            emailError.style.display = "none";
-        }
-
-        return true;
-    }
+   // Ajax 요청
+   $.ajax({
+       url: '/joinAction',
+       type: 'POST',
+       data: $(this).serialize(),
+       success: function(response) {
+           if (response.status === 'success') {
+               window.location.href = '/login/setProfile';
+           } else {
+               alert(response.message || '회원가입 실패!');
+           }
+       },
+       error: function() {
+           alert('서버 오류가 발생했습니다.');
+       }
+   });
+});
 </script>
 </body>
 </html>

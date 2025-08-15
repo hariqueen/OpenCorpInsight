@@ -1,6 +1,7 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <html>
 <head>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <title>로그인</title>
     <style>
         body {
@@ -102,8 +103,6 @@
     <input type="password" name="password" placeholder="비밀번호를 입력하세요" required>
     <button type="submit" class="login-btn">LOGIN</button>
 </form>
-
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
   $('#loginForm').on('submit', function(e) {
     e.preventDefault();

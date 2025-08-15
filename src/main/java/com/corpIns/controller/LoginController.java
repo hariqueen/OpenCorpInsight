@@ -36,20 +36,53 @@ public class LoginController {
         return "login/join"; // /WEB-INF/views/login/join.jsp
     }
 
-    @PostMapping("/joinAction")
-    public String joinAction(@RequestParam String email,
-                             @RequestParam String password) {
-        // 비밀번호 암호화
-        String passwordHash = passwordEncoder.encode(password);
-
-        Map<String, Object> param = new HashMap<>();
-        param.put("email", email);
-        param.put("password_hash", passwordHash);
-
-        userService.insertUser(param);
-
-        return "login/login";
+    @GetMapping("/setProfile")
+    public String setProfile() {
+        return "login/setProfile"; // /WEB-INF/views/login/setProfile.jsp
     }
+
+    @GetMapping("/joinAction")
+    public String joinAction() {
+        return "login/joinAction"; // /WEB-INF/views/login/joinAction.jsp
+    }
+
+    @PostMapping("/joinAction")
+    @ResponseBody
+    public Map<String, Object> joinAction(
+            @RequestParam String email,
+            @RequestParam String password,
+            @RequestParam String confirmPassword) {
+
+        Map<String, Object> result = new HashMap<>();
+
+        try {
+            if (password == null || password.isEmpty()) {
+                throw new IllegalArgumentException("비밀번호를 입력하세요.");
+            }
+            if (!password.equals(confirmPassword)) {
+                throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
+            }
+
+            // 비밀번호 암호화
+            String passwordHash = passwordEncoder.encode(password);
+
+            // DB 저장 파라미터
+            Map<String, Object> param = new HashMap<>();
+            param.put("email", email);
+            param.put("password_hash", passwordHash);
+
+            // 유저 저장
+            userService.insertUser(param);
+
+            result.put("status", "success");
+        } catch (Exception e) {
+            result.put("status", "fail");
+            result.put("message", e.getMessage());
+        }
+        return result;
+    }
+
+
 
     @PostMapping("/loginAction")
     @ResponseBody
