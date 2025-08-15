@@ -161,10 +161,10 @@ async function searchCompany() {
         items.forEach(item => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td><button onclick="selectCompany('${item.corp_code}', '${item.company_name}')">선택</button></td>
-                <td>${item.company_name}</td>
+                <td><button onclick="selectCompany('${item.corp_code}', '${item.corp_name}')">선택</button></td>
+                <td>${item.corp_name}</td>
                 <td>${item.ceo_name || '-'}</td>
-                <td>${item.category || '-'}</td>
+                <td>${item.business_name || '-'}</td>
             `;
             resultBody.appendChild(tr);
         });
