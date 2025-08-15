@@ -122,7 +122,7 @@
 
 <script>
 // 서버 주소 설정
-const isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+const isLocal = location.hostname==='localhost' || location.hostname==='127.0.0.1';
 const SERVER_BASE_URL = isLocal ? 'http://127.0.0.1:5001' : 'http://43.203.170.37:5001';
 const API_SEARCH = `${SERVER_BASE_URL}/api/company/search`;
 
@@ -130,63 +130,60 @@ const searchInput = document.getElementById('popupSearchInput');
 const searchBtn = document.getElementById('popupSearchBtn');
 const resultBody = document.getElementById('popupResultBody');
 
-// 검색 버튼 클릭 또는 엔터 이벤트
 searchBtn.addEventListener('click', searchCompany);
-searchInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') searchCompany();
-});
+searchInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter') searchCompany(); });
 
 async function searchCompany() {
     const keyword = searchInput.value.trim();
     resultBody.innerHTML = '';
 
-    if (!keyword) {
+    if(!keyword){
         resultBody.innerHTML = '<tr><td colspan="4">검색어를 입력해 주세요.</td></tr>';
         return;
     }
 
     try {
-        // GET 방식으로 API 호출
         const resp = await fetch(`${API_SEARCH}?name=${encodeURIComponent(keyword)}`);
         const response = await resp.json();
 
-        if (response.status !== 'success' || !response.data || response.data.length === 0) {
+        if(response.status !== 'success' || !response.data){
             resultBody.innerHTML = '<tr><td colspan="4">검색 결과가 없습니다.</td></tr>';
             return;
         }
 
-        // 결과 테이블 채우기
-        const items = response.data;
-        resultBody.innerHTML = ''; // 초기화
+        // response.data가 배열이든 객체든 대응
+        const items = Array.isArray(response.data) ? response.data : [response.data];
+        resultBody.innerHTML = '';
         items.forEach(item => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td>
-                    <button onclick="selectCompany('${item.corp_code}', '${item.corp_name}')">선택</button>
-                </td>
-                <td>${item.corp_name}</td>
+                <td><button onclick="selectCompany('${item.corp_code}')">선택</button></td>
+                <td>${item.company_name}</td>
                 <td>${item.ceo_name || '-'}</td>
                 <td>${item.business_name || '-'}</td>
             `;
             resultBody.appendChild(tr);
         });
 
-    } catch (err) {
+    } catch(err) {
         console.error(err);
         resultBody.innerHTML = `<tr><td colspan="4">오류 발생: ${err.message}</td></tr>`;
     }
 }
 
-// 회사 선택 -> 부모 페이지 전달 후 팝업 닫기
-function selectCompany(corp_code, corp_name) {
-    if (window.opener && window.opener.onCompanySelected) {
-        window.opener.onCompanySelected({ corp_code, corp_name });
+// 선택 시 부모 페이지로 전달 + startChatWithCompany 자동 호출
+function selectCompany(corp_code) {
+    if(window.opener) {
+        if(window.opener.startChatWithCompany){
+            window.opener.startChatWithCompany(corp_code);
+        } else {
+            console.warn('부모 페이지에 startChatWithCompany 함수가 없습니다.');
+        }
         window.close();
     } else {
         alert('부모 페이지가 없습니다.');
     }
 }
-
 </script>
 </body>
 </html>
