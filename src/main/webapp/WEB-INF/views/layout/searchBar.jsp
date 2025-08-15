@@ -74,10 +74,13 @@ window.onCompanySelected = async function(company) {
 
     try {
         // 대시보드 API 호출
-        const dashboardResp = await fetch('/api/dashboard', {
-            method:'POST',
-            headers:{ 'Content-Type':'application/json' },
-            body: JSON.stringify({ corp_code: company.corp_code, user_sno: getCurrentUserSno() })
+        const startYear = 2020;
+        const endYear = 2023;
+
+        const dashboardUrl = `http://43.203.170.37:5001/api/dashboard/${company.corp_code}?start_year=${startYear}&end_year=${endYear}`;
+        const dashboardResp = await fetch(dashboardUrl, {
+            method: 'GET', // 쿼리 스트링이면 GET
+            headers: { 'Content-Type': 'application/json' }
         });
         const dashboardData = await dashboardResp.json();
         console.log('대시보드 데이터:', dashboardData);
@@ -95,14 +98,14 @@ window.onCompanySelected = async function(company) {
         });
 
         // 필요 시 compareDetail 페이지로 이동
-        const query = new URLSearchParams({ corp_code: company.corp_code }).toString();
-        window.location.href = `http://43.203.170.37:5001/chatBotDash?${query}`;
+        window.location.href = `http://43.203.170.37:5001/chatBotDash?corp_code=${company.corp_code}`;
 
     } catch(err){
         console.error(err);
         alert('기업 선택 처리 중 오류 발생');
     }
 };
+
 
 // 로컬 스토리지에서 user_sno 가져오기
 function getCurrentUserSno() {
