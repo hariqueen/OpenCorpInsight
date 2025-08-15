@@ -121,83 +121,89 @@
 </div>
 
 <script>
-// 서버 주소
-const API_BASE_URL = 'http://43.203.170.37:5001/api';
+// Lambda API 주소
+const FINAL_API = "https://xp5bdl3ftqldheyokoroxvcocm0eorbe.lambda-url.ap-northeast-2.on.aws/";
 
-// DOM 요소
-const searchInput = document.getElementById('popupSearchInput');
-const searchBtn = document.getElementById('popupSearchBtn');
-const resultBody = document.getElementById('popupResultBody');
-
-// 검색 이벤트
-searchBtn.addEventListener('click', searchCompany);
-searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') searchCompany(); });
-
-// 1️⃣ 회사 검색
-async function searchCompany() {
-    const keyword = searchInput.value.trim();
-    resultBody.innerHTML = '';
+// 검색 버튼
+document.getElementById("popupSearchBtn").addEventListener("click", async function () {
+    const keyword = document.getElementById("popupSearchInput").value.trim();
+    const resultBody = document.getElementById("popupResultBody");
+    resultBody.innerHTML = "";
 
     if (!keyword) {
-        resultBody.innerHTML = '<tr><td colspan="4">검색어를 입력해 주세요.</td></tr>';
+        resultBody.innerHTML = `<tr><td colspan="4">검색어를 입력해 주세요.</td></tr>`;
         return;
     }
 
     try {
-        const resp = await fetch(`${API_BASE_URL}/company/search?name=${encodeURIComponent(keyword)}`);
-        const result = await resp.json();
-
-        if (result.status !== 'success' || !result.data || result.data.length === 0) {
-            resultBody.innerHTML = '<tr><td colspan="4">검색 결과가 없습니다.</td></tr>';
-            return;
-        }
-
-        // 결과 테이블 생성
-        resultBody.innerHTML = '';
-        result.data.forEach(item => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td><button onclick="selectCompany('${item.corp_code}', '${item.company_name}')">선택</button></td>
-                <td>${item.company_name}</td>
-                <td>${item.ceo_name || '-'}</td>
-                <td>${item.business_name || '-'}</td>
-            `;
-            resultBody.appendChild(tr);
+        // Lambda API에 POST로 검색
+        const resp = await fetch(FINAL_API, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ q: keyword, limit: 10, bgn_de: "20230701", end_de: "20240930" })
         });
 
-    } catch (err) {
-        console.error(err);
-        resultBody.innerHTML = `<tr><td colspan="4">오류 발생: ${err.message}</td></tr>`;
-    }
-}
+        if (!resp.ok) throw new Error(`서버 응답 오류: ${resp.status}`);
+        const data = await resp.json();
 
-// 2️⃣ 회사 선택 → 대시보드 데이터 호출
-async function selectCompany(corpCode, corpName) {
-    console.log('선택된 회사:', corpName, corpCode);
-
-    try {
-        const dashboardResp = await fetch(`${API_BASE_URL}/dashboard/${corpCode}?start_year=2020&end_year=2023`);
-        const dashboardData = await dashboardResp.json();
-
-        if (dashboardData.status !== 'success') {
-            alert('대시보드 데이터 로드 실패: ' + dashboardData.message);
+        if (!data.companies || data.companies.length === 0) {
+            resultBody.innerHTML = `<tr><td colspan="4">검색 결과가 없습니다.</td></tr>`;
             return;
         }
 
-        console.log('대시보드 데이터:', dashboardData.data);
+        // 테이블 채우기
+        let html = '';
+        data.companies.forEach(item => {
+            html += `
+            <tr>
+                <td>
+                    <button onclick="selectCompany('${item.corp_code}', '${item.corp_name}', '${item.ceo_name}', '${item.business_name}', '${item.stock_code}', ${item.is_listed})">
+                        선택
+                    </button>
+                </td>
+                <td>${item.corp_name}</td>
+                <td>${item.ceo_name}</td>
+                <td>${item.business_name}</td>
+            </tr>
+            `;
+        });
+        resultBody.innerHTML = html;
 
-        // TODO: 화면에 출력하거나 다른 함수로 전달
-        // 예: window.opener.updateDashboard(dashboardData.data);
+    } catch (err) {
+        console.error("검색 실패:", err);
+        resultBody.innerHTML = `<tr><td colspan="4">오류 발생: ${err.message}</td></tr>`;
+    }
+});
 
-    } catch (error) {
-        console.error('대시보드 API 호출 오류:', error);
-        alert('대시보드 API 호출 중 오류 발생');
+// 회사 선택
+async function selectCompany(corpCode, corpName, ceoName, businessName, stockCode, listed) {
+    const startDate = window.defaultStartDate || "20190101";
+    const endDate = window.defaultEndDate || "20241231";
+
+    try {
+        const resp = await fetch(FINAL_API, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ corp_code: corpCode, bgn_de: startDate, end_de: endDate })
+        });
+
+        if (!resp.ok) throw new Error(`서버 응답 오류: ${resp.status}`);
+        const result = await resp.json();
+
+        console.log('선택 기업 데이터:', result);
+        alert(`회사명: ${corpName}\n대표자명: ${ceoName}\n종목명: ${businessName}\n상장여부: ${listed ? '상장' : '비상장'}`);
+
+        // 부모 페이지에 전달 (원하면 주석 해제)
+        // if (window.opener && window.opener.receiveSelectedCompany) {
+        //     window.opener.receiveSelectedCompany({ corpCode, corpName, ceoName, businessName, stockCode, listed, data: result });
+        // }
+
+        window.close();
+    } catch (err) {
+        console.error('데이터 전송 실패:', err);
+        alert('데이터 전송 중 오류가 발생했습니다.');
     }
 }
-
-// 3️⃣ 부모 페이지 연동 (팝업에서만)
-window.onCompanySelected = selectCompany;
-
 </script>
 </body>
 </html>
