@@ -130,51 +130,57 @@ const searchInput = document.getElementById('popupSearchInput');
 const searchBtn = document.getElementById('popupSearchBtn');
 const resultBody = document.getElementById('popupResultBody');
 
-// 검색 버튼 클릭
+// 검색 버튼 클릭 또는 엔터
 searchBtn.addEventListener('click', searchCompany);
-searchInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter') searchCompany(); });
+searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') searchCompany(); });
 
-function searchCompany() {
+async function searchCompany() {
     const keyword = searchInput.value.trim();
     resultBody.innerHTML = '';
 
-    if(!keyword){
+    if (!keyword) {
         resultBody.innerHTML = '<tr><td colspan="4">검색어를 입력해 주세요.</td></tr>';
         return;
     }
 
-    fetch(`${API_SEARCH}?name=${encodeURIComponent(keyword)}`)
-        .then(res => res.json())
-        .then(response => {
-            if(response.status !== 'success' || !response.data){
-                resultBody.innerHTML = '<tr><td colspan="4">검색 결과가 없습니다.</td></tr>';
-                return;
-            }
-
-            const item = response.data;
-
-            resultBody.innerHTML = `
-                <tr>
-                    <td>
-                        <button onclick="selectCompany('${item.corp_code}', '${item.company_name}')">
-                            선택
-                        </button>
-                    </td>
-                    <td>${item.company_name}</td>
-                    <td>-</td>
-                    <td>-</td>
-                </tr>
-            `;
-        })
-        .catch(err => {
-            console.error(err);
-            resultBody.innerHTML = `<tr><td colspan="4">오류 발생: ${err.message}</td></tr>`;
+    try {
+        // POST 방식으로 API 호출
+        const resp = await fetch(API_SEARCH, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: keyword })
         });
+
+        const response = await resp.json();
+
+        if (response.status !== 'success' || !response.data || response.data.length === 0) {
+            resultBody.innerHTML = '<tr><td colspan="4">검색 결과가 없습니다.</td></tr>';
+            return;
+        }
+
+        // 여러 결과 처리
+        const items = response.data;
+        resultBody.innerHTML = ''; // 초기화
+        items.forEach(item => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><button onclick="selectCompany('${item.corp_code}', '${item.company_name}')">선택</button></td>
+                <td>${item.company_name}</td>
+                <td>${item.ceo_name || '-'}</td>
+                <td>${item.category || '-'}</td>
+            `;
+            resultBody.appendChild(tr);
+        });
+
+    } catch (err) {
+        console.error(err);
+        resultBody.innerHTML = `<tr><td colspan="4">오류 발생: ${err.message}</td></tr>`;
+    }
 }
 
-//  회사 선택 -> 부모 페이지로 전달 후 팝업 닫기
+// 회사 선택 -> 부모 페이지 전달 후 팝업 닫기
 function selectCompany(corp_code, corp_name) {
-    if(window.opener && window.opener.onCompanySelected){
+    if (window.opener && window.opener.onCompanySelected) {
         window.opener.onCompanySelected({ corp_code, corp_name });
         window.close();
     } else {
@@ -182,6 +188,5 @@ function selectCompany(corp_code, corp_name) {
     }
 }
 </script>
-
 </body>
 </html>
