@@ -122,68 +122,99 @@
 
 <script>
 // 서버 주소 설정
-const isLocal = location.hostname==='localhost' || location.hostname==='127.0.0.1';
-const SERVER_BASE_URL = isLocal ? 'http://127.0.0.1:5001' : 'http://43.203.170.37:5001';
-const API_SEARCH = `${SERVER_BASE_URL}/api/company/search`;
+const API_BASE_URL = 'http://43.203.170.37:5001';
 
-const searchInput = document.getElementById('popupSearchInput');
-const searchBtn = document.getElementById('popupSearchBtn');
-const resultBody = document.getElementById('popupResultBody');
+// --- 팝업 쪽 코드 ---
+const popupSearchInput = document.getElementById('popupSearchInput');
+const popupSearchBtn = document.getElementById('popupSearchBtn');
+const popupResultBody = document.getElementById('popupResultBody');
 
-searchBtn.addEventListener('click', searchCompany);
-searchInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter') searchCompany(); });
+popupSearchBtn.addEventListener('click', searchCompany);
+popupSearchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') searchCompany();
+});
 
 async function searchCompany() {
-    const keyword = searchInput.value.trim();
-    resultBody.innerHTML = '';
+    const keyword = popupSearchInput.value.trim();
+    popupResultBody.innerHTML = '';
 
-    if(!keyword){
-        resultBody.innerHTML = '<tr><td colspan="4">검색어를 입력해 주세요.</td></tr>';
+    if (!keyword) {
+        popupResultBody.innerHTML = '<tr><td colspan="4">검색어를 입력해 주세요.</td></tr>';
         return;
     }
 
     try {
-        const resp = await fetch(`${API_SEARCH}?name=${encodeURIComponent(keyword)}`);
-        const response = await resp.json();
+        // GET 방식 호출
+        const resp = await fetch(`${API_BASE_URL}/api/company/search?name=${encodeURIComponent(keyword)}`);
+        const result = await resp.json();
 
-        if(response.status !== 'success' || !response.data){
-            resultBody.innerHTML = '<tr><td colspan="4">검색 결과가 없습니다.</td></tr>';
+        if (result.status !== 'success' || !result.data || result.data.length === 0) {
+            popupResultBody.innerHTML = '<tr><td colspan="4">검색 결과가 없습니다.</td></tr>';
             return;
         }
 
-        // response.data가 배열이든 객체든 대응
-        const items = Array.isArray(response.data) ? response.data : [response.data];
-        resultBody.innerHTML = '';
-        items.forEach(item => {
+        popupResultBody.innerHTML = '';
+        result.data.forEach(item => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td><button onclick="selectCompany('${item.corp_code}')">선택</button></td>
+                <td><button onclick="selectCompany('${item.corp_code}', '${item.company_name}')">선택</button></td>
                 <td>${item.company_name}</td>
                 <td>${item.ceo_name || '-'}</td>
                 <td>${item.business_name || '-'}</td>
             `;
-            resultBody.appendChild(tr);
+            popupResultBody.appendChild(tr);
         });
 
-    } catch(err) {
+    } catch (err) {
         console.error(err);
-        resultBody.innerHTML = `<tr><td colspan="4">오류 발생: ${err.message}</td></tr>`;
+        popupResultBody.innerHTML = `<tr><td colspan="4">오류 발생: ${err.message}</td></tr>`;
     }
 }
 
-// 선택 시 부모 페이지로 전달 + startChatWithCompany 자동 호출
-function selectCompany(corp_code) {
-    if(window.opener) {
-        if(window.opener.startChatWithCompany){
-            window.opener.startChatWithCompany(corp_code);
-        } else {
-            console.warn('부모 페이지에 startChatWithCompany 함수가 없습니다.');
-        }
+function selectCompany(corpCode, corpName) {
+    if (window.opener && window.opener.onCompanySelected) {
+        window.opener.onCompanySelected({ corpCode, corpName });
         window.close();
     } else {
         alert('부모 페이지가 없습니다.');
     }
 }
+
+// --- 부모 페이지에서 팝업 선택 후 처리 ---
+window.onCompanySelected = async function({ corpCode, corpName }) {
+    console.log('선택된 기업:', corpCode, corpName);
+
+    try {
+        const data = await getDashboardData(corpCode);
+        console.log('받은 대시보드 데이터:', data);
+
+        // 예시: 화면 업데이트
+        document.getElementById('companyNameDisplay').textContent = corpName;
+        document.getElementById('financialSummary').textContent = JSON.stringify(data.financial_data, null, 2);
+        document.getElementById('newsList').textContent = JSON.stringify(data.news_articles, null, 2);
+
+    } catch (err) {
+        console.error('데이터 로드 실패:', err);
+    }
+}
+
+// --- 대시보드 데이터 호출 ---
+async function getDashboardData(corpCode) {
+    try {
+        const resp = await fetch(`${API_BASE_URL}/api/dashboard/${corpCode}?start_year=2020&end_year=2023`);
+        const result = await resp.json();
+
+        if (result.status === 'success') {
+            return result.data;
+        } else {
+            throw new Error(result.message);
+        }
+    } catch (err) {
+        console.error('API 호출 오류:', err);
+        throw err;
+    }
+}
+
 </script>
 </body>
 </html>
