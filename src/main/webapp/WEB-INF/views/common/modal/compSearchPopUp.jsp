@@ -181,6 +181,7 @@ async function selectCompany(corpCode, corpName, ceoName, businessName, stockCod
     const endDate = window.defaultEndDate || "20241231";
 
     try {
+        // Lambda API 호출
         const resp = await fetch(FINAL_API, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -193,17 +194,22 @@ async function selectCompany(corpCode, corpName, ceoName, businessName, stockCod
         console.log('선택 기업 데이터:', result);
         alert(`회사명: ${corpName}\n대표자명: ${ceoName}\n종목명: ${businessName}\n상장여부: ${listed ? '상장' : '비상장'}`);
 
-        // 부모 페이지에 전달 (원하면 주석 해제)
-        // if (window.opener && window.opener.receiveSelectedCompany) {
-        //     window.opener.receiveSelectedCompany({ corpCode, corpName, ceoName, businessName, stockCode, listed, data: result });
-        // }
+        // 부모 페이지에 선택된 회사 정보 전달
+        if (window.opener && window.opener.receiveSelectedCompany) {
+            window.opener.receiveSelectedCompany({
+                corpCode, corpName, ceoName, businessName, stockCode, listed, data: result
+            });
+        }
 
+        // 팝업 닫기
         window.close();
+
     } catch (err) {
         console.error('데이터 전송 실패:', err);
         alert('데이터 전송 중 오류가 발생했습니다.');
     }
 }
+
 </script>
 </body>
 </html>
