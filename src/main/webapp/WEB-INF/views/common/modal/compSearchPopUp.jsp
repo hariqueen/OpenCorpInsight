@@ -121,39 +121,39 @@
 </div>
 
 <script>
-// 서버 주소 설정
-const API_BASE_URL = 'http://43.203.170.37:5001';
+// 서버 주소
+const API_BASE_URL = 'http://43.203.170.37:5001/api';
 
-// --- 팝업 쪽 코드 ---
-const popupSearchInput = document.getElementById('popupSearchInput');
-const popupSearchBtn = document.getElementById('popupSearchBtn');
-const popupResultBody = document.getElementById('popupResultBody');
+// DOM 요소
+const searchInput = document.getElementById('popupSearchInput');
+const searchBtn = document.getElementById('popupSearchBtn');
+const resultBody = document.getElementById('popupResultBody');
 
-popupSearchBtn.addEventListener('click', searchCompany);
-popupSearchInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') searchCompany();
-});
+// 검색 이벤트
+searchBtn.addEventListener('click', searchCompany);
+searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') searchCompany(); });
 
+// 1️⃣ 회사 검색
 async function searchCompany() {
-    const keyword = popupSearchInput.value.trim();
-    popupResultBody.innerHTML = '';
+    const keyword = searchInput.value.trim();
+    resultBody.innerHTML = '';
 
     if (!keyword) {
-        popupResultBody.innerHTML = '<tr><td colspan="4">검색어를 입력해 주세요.</td></tr>';
+        resultBody.innerHTML = '<tr><td colspan="4">검색어를 입력해 주세요.</td></tr>';
         return;
     }
 
     try {
-        // GET 방식 호출
-        const resp = await fetch(`${API_BASE_URL}/api/company/search?name=${encodeURIComponent(keyword)}`);
+        const resp = await fetch(`${API_BASE_URL}/company/search?name=${encodeURIComponent(keyword)}`);
         const result = await resp.json();
 
         if (result.status !== 'success' || !result.data || result.data.length === 0) {
-            popupResultBody.innerHTML = '<tr><td colspan="4">검색 결과가 없습니다.</td></tr>';
+            resultBody.innerHTML = '<tr><td colspan="4">검색 결과가 없습니다.</td></tr>';
             return;
         }
 
-        popupResultBody.innerHTML = '';
+        // 결과 테이블 생성
+        resultBody.innerHTML = '';
         result.data.forEach(item => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
@@ -162,58 +162,41 @@ async function searchCompany() {
                 <td>${item.ceo_name || '-'}</td>
                 <td>${item.business_name || '-'}</td>
             `;
-            popupResultBody.appendChild(tr);
+            resultBody.appendChild(tr);
         });
 
     } catch (err) {
         console.error(err);
-        popupResultBody.innerHTML = `<tr><td colspan="4">오류 발생: ${err.message}</td></tr>`;
+        resultBody.innerHTML = `<tr><td colspan="4">오류 발생: ${err.message}</td></tr>`;
     }
 }
 
-function selectCompany(corpCode, corpName) {
-    if (window.opener && window.opener.onCompanySelected) {
-        window.opener.onCompanySelected({ corpCode, corpName });
-        window.close();
-    } else {
-        alert('부모 페이지가 없습니다.');
-    }
-}
-
-// --- 부모 페이지에서 팝업 선택 후 처리 ---
-window.onCompanySelected = async function({ corpCode, corpName }) {
-    console.log('선택된 기업:', corpCode, corpName);
+// 2️⃣ 회사 선택 → 대시보드 데이터 호출
+async function selectCompany(corpCode, corpName) {
+    console.log('선택된 회사:', corpName, corpCode);
 
     try {
-        const data = await getDashboardData(corpCode);
-        console.log('받은 대시보드 데이터:', data);
+        const dashboardResp = await fetch(`${API_BASE_URL}/dashboard/${corpCode}?start_year=2020&end_year=2023`);
+        const dashboardData = await dashboardResp.json();
 
-        // 예시: 화면 업데이트
-        document.getElementById('companyNameDisplay').textContent = corpName;
-        document.getElementById('financialSummary').textContent = JSON.stringify(data.financial_data, null, 2);
-        document.getElementById('newsList').textContent = JSON.stringify(data.news_articles, null, 2);
-
-    } catch (err) {
-        console.error('데이터 로드 실패:', err);
-    }
-}
-
-// --- 대시보드 데이터 호출 ---
-async function getDashboardData(corpCode) {
-    try {
-        const resp = await fetch(`${API_BASE_URL}/api/dashboard/${corpCode}?start_year=2020&end_year=2023`);
-        const result = await resp.json();
-
-        if (result.status === 'success') {
-            return result.data;
-        } else {
-            throw new Error(result.message);
+        if (dashboardData.status !== 'success') {
+            alert('대시보드 데이터 로드 실패: ' + dashboardData.message);
+            return;
         }
-    } catch (err) {
-        console.error('API 호출 오류:', err);
-        throw err;
+
+        console.log('대시보드 데이터:', dashboardData.data);
+
+        // TODO: 화면에 출력하거나 다른 함수로 전달
+        // 예: window.opener.updateDashboard(dashboardData.data);
+
+    } catch (error) {
+        console.error('대시보드 API 호출 오류:', error);
+        alert('대시보드 API 호출 중 오류 발생');
     }
 }
+
+// 3️⃣ 부모 페이지 연동 (팝업에서만)
+window.onCompanySelected = selectCompany;
 
 </script>
 </body>
