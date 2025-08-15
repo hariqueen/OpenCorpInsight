@@ -136,7 +136,7 @@ $('#joinForm').on('submit', function(e) {
        data: $(this).serialize(),
        success: function(response) {
            if (response.status === 'success') {
-               window.location.href = '/login/setProfile';
+               window.location.href = '/setProfile';
            } else {
                alert(response.message || '회원가입 실패!');
            }

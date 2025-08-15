@@ -95,8 +95,8 @@ window.onCompanySelected = async function(company) {
         });
 
         // 필요 시 compareDetail 페이지로 이동
-        const query = new URLSearchParams(company).toString();
-        window.location.href = `/compareDetail?${query}`;
+        const query = new URLSearchParams({ corp_code: company.corp_code }).toString();
+        window.location.href = `http://43.203.170.37:5001/chatBotDash?${query}`;
 
     } catch(err){
         console.error(err);

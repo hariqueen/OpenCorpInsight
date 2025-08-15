@@ -8,9 +8,10 @@
             position: relative;
             margin: 0;
             background-color: #161e63;
-            font-family: 'Pretendard', sans-serif;
-            color: white;
+            font-family: 'Poppins', 'Pretendard', sans-serif;
+            color: #e6e6e6; /* 약간 부드러운 회색톤 */
             line-height: 1.6;
+            letter-spacing: 0.3px;
         }
 
         .container {
@@ -22,13 +23,20 @@
         h1 {
             font-family: 'Poppins', sans-serif;
             text-align: center;
-            font-size: 2.5rem;
-            font-weight: 800;
-            margin: 20px 0;
-            letter-spacing: -0.5px;
+            font-size: 2rem;
+            font-weight: 400; /* 얇고 세련된 두께 */
+            margin: 25px 0 15px;
+            letter-spacing: 0.5px;
+            color: #f0f0f0;
             animation: fadeIn 1s ease-in;
         }
 
+        h1 + h1 {
+            margin-top: 0; /* 연속 제목은 여백 줄임 */
+            font-size: 1.5rem;
+            font-weight: 300;
+            color: #cfd4ff; /* 살짝 파스텔 톤 */
+        }
         @keyframes fadeIn {
             from {
                 opacity: 0;
