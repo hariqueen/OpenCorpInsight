@@ -124,7 +124,7 @@
 // Lambda API 주소
 const FINAL_API = "https://xp5bdl3ftqldheyokoroxvcocm0eorbe.lambda-url.ap-northeast-2.on.aws/";
 
-// 검색 버튼
+// 검색 버튼 이벤트
 document.getElementById("popupSearchBtn").addEventListener("click", async function () {
     const keyword = document.getElementById("popupSearchInput").value.trim();
     const resultBody = document.getElementById("popupResultBody");
@@ -136,11 +136,16 @@ document.getElementById("popupSearchBtn").addEventListener("click", async functi
     }
 
     try {
-        // Lambda API에 POST로 검색
+        // Lambda API POST 요청
         const resp = await fetch(FINAL_API, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ q: keyword, limit: 10, bgn_de: "20230701", end_de: "20240930" })
+            body: JSON.stringify({
+                q: keyword,
+                limit: 10,
+                bgn_de: "20230701",
+                end_de: "20240930"
+            })
         });
 
         if (!resp.ok) throw new Error(`서버 응답 오류: ${resp.status}`);
@@ -157,7 +162,13 @@ document.getElementById("popupSearchBtn").addEventListener("click", async functi
             html += `
             <tr>
                 <td>
-                    <button onclick="selectCompany('${item.corp_code}', '${item.corp_name}', '${item.ceo_name}', '${item.business_name}', '${item.stock_code}', ${item.is_listed})">
+                    <button onclick="selectCompany(
+                        '${item.corp_code}',
+                        '${item.corp_name}',
+                        '${item.ceo_name}',
+                        '${item.business_name}',
+                        '${item.stock_code || ''}',
+                        ${item.is_listed})">
                         선택
                     </button>
                 </td>
@@ -175,17 +186,21 @@ document.getElementById("popupSearchBtn").addEventListener("click", async functi
     }
 });
 
-// 회사 선택
+// 회사 선택 이벤트
 async function selectCompany(corpCode, corpName, ceoName, businessName, stockCode, listed) {
     const startDate = window.defaultStartDate || "20190101";
     const endDate = window.defaultEndDate || "20241231";
 
     try {
-        // Lambda API 호출
+        // 선택한 회사 상세 API 호출
         const resp = await fetch(FINAL_API, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ corp_code: corpCode, bgn_de: startDate, end_de: endDate })
+            body: JSON.stringify({
+                corp_code: corpCode,
+                bgn_de: startDate,
+                end_de: endDate
+            })
         });
 
         if (!resp.ok) throw new Error(`서버 응답 오류: ${resp.status}`);
@@ -194,15 +209,8 @@ async function selectCompany(corpCode, corpName, ceoName, businessName, stockCod
         console.log('선택 기업 데이터:', result);
         alert(`회사명: ${corpName}\n대표자명: ${ceoName}\n종목명: ${businessName}\n상장여부: ${listed ? '상장' : '비상장'}`);
 
-        // 부모 페이지에 선택된 회사 정보 전달
-        if (window.opener && window.opener.receiveSelectedCompany) {
-            window.opener.receiveSelectedCompany({
-                corpCode, corpName, ceoName, businessName, stockCode, listed, data: result
-            });
-        }
-
-        // 팝업 닫기
-        window.close();
+        // 팝업에서 선택 완료 → 챗봇 대시보드 페이지로 이동
+        window.location.href = `http://43.203.170.37:5001/chatBotDash?corpCode=${corpCode}`;
 
     } catch (err) {
         console.error('데이터 전송 실패:', err);
