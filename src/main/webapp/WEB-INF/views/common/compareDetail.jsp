@@ -6,273 +6,293 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>기업 비교 분석</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+       * {
+           margin: 0;
+           padding: 0;
+           box-sizing: border-box;
+       }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            color: white;
-        }
+       body {
+           font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+           background: linear-gradient(135deg, #0d0f2f 0%, #1c1f4a 100%);
+           color: #e0e0e0;
+           min-height: 100vh;
+       }
 
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px 40px;
-        }
+       /* 헤더 */
+       .header {
+           display: flex;
+           justify-content: space-between;
+           align-items: center;
+           padding: 20px 40px;
+       }
 
-        .user-icon {
-            width: 50px;
-            height: 50px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            backdrop-filter: blur(10px);
-        }
+       .user-icon {
+           width: 50px;
+           height: 50px;
+           background: rgba(255, 255, 255, 0.1);
+           border-radius: 50%;
+           display: flex;
+           align-items: center;
+           justify-content: center;
+           backdrop-filter: blur(8px);
+           font-size: 24px;
+       }
 
-        .ai-chat {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            width: 60px;
-            height: 60px;
-            background: linear-gradient(135deg, #00d4ff, #0099cc);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 16px;
-            cursor: pointer;
-            box-shadow: 0 4px 20px rgba(0, 212, 255, 0.4);
-            transition: transform 0.2s;
-        }
+       /* AI 채팅 버튼 */
+       .ai-chat {
+           position: fixed;
+           bottom: 30px;
+           right: 30px;
+           width: 60px;
+           height: 60px;
+           background: linear-gradient(135deg, #00e0ff, #0066cc);
+           border-radius: 50%;
+           display: flex;
+           align-items: center;
+           justify-content: center;
+           font-weight: bold;
+           font-size: 18px;
+           cursor: pointer;
+           box-shadow: 0 6px 20px rgba(0, 224, 255, 0.5);
+           transition: transform 0.2s, box-shadow 0.2s;
+       }
 
-        .ai-chat:hover {
-            transform: scale(1.1);
-        }
+       .ai-chat:hover {
+           transform: scale(1.15);
+           box-shadow: 0 8px 30px rgba(0, 224, 255, 0.7);
+       }
 
-        .main-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
+       /* 메인 컨테이너 */
+       .main-container {
+           max-width: 1200px;
+           margin: 0 auto;
+           padding: 20px;
+       }
 
-        .vs-header {
-            text-align: center;
-            margin-bottom: 40px;
-        }
+       /* VS 타이틀 */
+       .vs-header {
+           text-align: center;
+           margin-bottom: 40px;
+       }
 
-        .vs-title {
-            font-size: 48px;
-            font-weight: 300;
-            letter-spacing: 8px;
-            opacity: 0.9;
-        }
+       .vs-title {
+           font-size: 56px;
+           font-weight: 400;
+           letter-spacing: 10px;
+           color: #00e0ff;
+           text-shadow: 0 0 10px #00e0ff, 0 0 20px #00e0ff;
+       }
 
-        .companies-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-            padding: 0 50px;
-        }
+       /* 기업 이름 */
+       .companies-header {
+           display: flex;
+           justify-content: space-between;
+           align-items: center;
+           margin-bottom: 30px;
+           padding: 0 50px;
+       }
 
-        .company-name {
-            font-size: 32px;
-            font-weight: 600;
-            text-align: center;
-        }
+       .company-name {
+           font-size: 32px;
+           font-weight: 600;
+           text-align: center;
+       }
 
-        .company-left {
-            color: #ff9a9e;
-        }
+       .company-left {
+           color: #ff6a95;
+           text-shadow: 0 0 5px #ff6a95;
+       }
 
-        .company-right {
-            color: #a8edea;
-        }
+       .company-right {
+           color: #4ef0e0;
+           text-shadow: 0 0 5px #4ef0e0;
+       }
 
-        .comparison-grid {
-            display: flex;
-            flex-direction: column;
-            gap: 25px;
-        }
+       /* 비교 카드 */
+       .comparison-grid {
+           display: flex;
+           flex-direction: column;
+           gap: 25px;
+       }
 
-        .comparison-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 40px;
-        }
+       .comparison-row {
+           display: flex;
+           justify-content: space-between;
+           align-items: center;
+           gap: 40px;
+       }
 
-        .metric-card {
-            flex: 1;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 25px;
-            text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            position: relative;
-            overflow: hidden;
-        }
+       .metric-card {
+           flex: 1;
+           background: rgba(255, 255, 255, 0.05);
+           backdrop-filter: blur(12px);
+           border-radius: 20px;
+           padding: 25px;
+           text-align: center;
+           border: 1px solid rgba(255, 255, 255, 0.15);
+           position: relative;
+           transition: transform 0.2s, box-shadow 0.2s;
+       }
 
-        .metric-card.winner {
-            background: rgba(255, 255, 255, 0.2);
-            box-shadow: 0 8px 32px rgba(255, 255, 255, 0.1);
-        }
+       .metric-card.winner {
+           background: rgba(255, 255, 255, 0.15);
+           box-shadow: 0 8px 30px rgba(255, 255, 255, 0.1);
+           transform: translateY(-3px);
+       }
 
-        .metric-card.left {
-            background: linear-gradient(135deg, rgba(255, 154, 158, 0.2), rgba(255, 154, 158, 0.1));
-        }
+       .metric-card.left {
+           background: linear-gradient(135deg, rgba(255, 106, 149, 0.15), rgba(255, 106, 149, 0.05));
+       }
 
-        .metric-card.right {
-            background: linear-gradient(135deg, rgba(168, 237, 234, 0.2), rgba(168, 237, 234, 0.1));
-        }
+       .metric-card.right {
+           background: linear-gradient(135deg, rgba(78, 240, 224, 0.15), rgba(78, 240, 224, 0.05));
+       }
 
-        .metric-label {
-            font-size: 16px;
-            opacity: 0.8;
-            margin-bottom: 10px;
-            font-weight: 500;
-        }
+       .metric-label {
+           font-size: 16px;
+           opacity: 0.8;
+           margin-bottom: 10px;
+           font-weight: 500;
+       }
 
-        .metric-value {
-            font-size: 28px;
-            font-weight: 700;
-            margin-bottom: 5px;
-        }
+       .metric-value {
+           font-size: 28px;
+           font-weight: 700;
+           margin-bottom: 5px;
+       }
 
-        .metric-unit {
-            font-size: 14px;
-            opacity: 0.7;
-        }
+       .metric-unit {
+           font-size: 14px;
+           opacity: 0.7;
+       }
 
-        .vs-divider {
-            width: 60px;
-            height: 60px;
-            background: rgba(255, 255, 255, 0.15);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            font-weight: bold;
-            backdrop-filter: blur(10px);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-        }
+       /* VS Divider */
+       .vs-divider {
+           width: 60px;
+           height: 60px;
+           background: rgba(255, 255, 255, 0.1);
+           border-radius: 50%;
+           display: flex;
+           align-items: center;
+           justify-content: center;
+           font-size: 20px;
+           font-weight: bold;
+           backdrop-filter: blur(10px);
+           border: 2px solid rgba(255, 255, 255, 0.2);
+       }
 
-        .winner-indicator {
-            position: absolute;
-            top: -5px;
-            right: -5px;
-            width: 30px;
-            height: 30px;
-            background: linear-gradient(135deg, #ffd700, #ffed4e);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-            color: #333;
-        }
+       /* 승자 표시 */
+       .winner-indicator {
+           position: absolute;
+           top: -5px;
+           right: -5px;
+           width: 32px;
+           height: 32px;
+           background: linear-gradient(135deg, #ffd700, #ffed4e);
+           border-radius: 50%;
+           display: flex;
+           align-items: center;
+           justify-content: center;
+           font-size: 16px;
+           color: #333;
+           box-shadow: 0 0 5px #ffd700;
+       }
 
-        .analysis-button {
-            display: block;
-            margin: 40px auto;
-            padding: 15px 40px;
-            background: linear-gradient(135deg, #00d4ff, #0099cc);
-            border: none;
-            border-radius: 30px;
-            color: white;
-            font-size: 18px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 20px rgba(0, 212, 255, 0.3);
-        }
+       /* 분석 버튼 */
+       .analysis-button {
+           display: block;
+           margin: 40px auto;
+           padding: 15px 40px;
+           background: linear-gradient(135deg, #00e0ff, #0066cc);
+           border: none;
+           border-radius: 30px;
+           color: white;
+           font-size: 18px;
+           font-weight: 600;
+           cursor: pointer;
+           transition: all 0.3s ease;
+           box-shadow: 0 6px 20px rgba(0, 224, 255, 0.4);
+       }
 
-        .analysis-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 25px rgba(0, 212, 255, 0.4);
-        }
+       .analysis-button:hover {
+           transform: translateY(-3px);
+           box-shadow: 0 8px 30px rgba(0, 224, 255, 0.6);
+       }
 
-        .summary-section {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 30px;
-            margin-top: 40px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
+       /* 요약 섹션 */
+       .summary-section {
+           background: rgba(255, 255, 255, 0.05);
+           backdrop-filter: blur(12px);
+           border-radius: 20px;
+           padding: 30px;
+           margin-top: 40px;
+           border: 1px solid rgba(255, 255, 255, 0.1);
+       }
 
-        .summary-title {
-            font-size: 24px;
-            font-weight: 600;
-            margin-bottom: 20px;
-            text-align: center;
-        }
+       .summary-title {
+           font-size: 24px;
+           font-weight: 600;
+           margin-bottom: 20px;
+           text-align: center;
+       }
 
-        .summary-stats {
-            display: flex;
-            justify-content: space-around;
-            gap: 20px;
-        }
+       .summary-stats {
+           display: flex;
+           justify-content: space-around;
+           gap: 20px;
+       }
 
-        .summary-item {
-            text-align: center;
-            flex: 1;
-        }
+       .summary-item {
+           text-align: center;
+           flex: 1;
+       }
 
-        .summary-item .label {
-            font-size: 14px;
-            opacity: 0.8;
-            margin-bottom: 8px;
-        }
+       .summary-item .label {
+           font-size: 14px;
+           opacity: 0.8;
+           margin-bottom: 8px;
+       }
 
-        .summary-item .value {
-            font-size: 20px;
-            font-weight: 700;
-        }
+       .summary-item .value {
+           font-size: 20px;
+           font-weight: 700;
+       }
 
-        .summary-item .winner {
-            color: #ffd700;
-        }
+       .summary-item .winner {
+           color: #ffd700;
+       }
 
-        @media (max-width: 768px) {
-            .companies-header {
-                padding: 0 20px;
-            }
+       /* 반응형 */
+       @media (max-width: 768px) {
+           .companies-header {
+               padding: 0 20px;
+           }
 
-            .company-name {
-                font-size: 24px;
-            }
+           .company-name {
+               font-size: 24px;
+           }
 
-            .comparison-row {
-                gap: 20px;
-            }
+           .comparison-row {
+               gap: 20px;
+               flex-direction: column;
+           }
 
-            .metric-card {
-                padding: 20px;
-            }
+           .metric-card {
+               padding: 20px;
+           }
 
-            .metric-value {
-                font-size: 24px;
-            }
+           .metric-value {
+               font-size: 24px;
+           }
 
-            .vs-divider {
-                width: 50px;
-                height: 50px;
-                font-size: 16px;
-            }
-        }
+           .vs-divider {
+               width: 50px;
+               height: 50px;
+               font-size: 16px;
+           }
+       }
+
     </style>
 </head>
 <body>
@@ -406,7 +426,7 @@
         </div>
 
         <button class="analysis-button" onclick="openDetailAnalysis()">
-            기업 비교 바로가기
+            다른 기업 비교하기
         </button>
     </div>
 
@@ -568,7 +588,8 @@
         }
 
         function openDetailAnalysis() {
-            alert('상세 분석 페이지로 이동합니다.');
+            alert('기업 분석 페이지로 이동합니다.');
+            window.location.href = '/compare';
         }
 
         function openAIChat() {

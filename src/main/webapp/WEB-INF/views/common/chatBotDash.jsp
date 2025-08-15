@@ -540,7 +540,7 @@
 
     <script>
         // 🔧 Flask 서버 연동 설정
-        const API_BASE_URL = 'http://localhost:5001'; // Flask 서버 주소 (필요시 수정)
+        const API_BASE_URL = 'http://43.203.170.37:5001'; // 배포된 서버 주소
         let currentDashboardData = null; // 현재 대시보드 데이터
         let revenueChart = null;
         let profitChart = null;
@@ -549,7 +549,7 @@
         async function fetchDashboardData(corpCode, startYear = '2020', endYear = '2023') {
             try {
                 console.log(`대시보드 데이터 요청: ${corpCode} (${startYear}-${endYear})`);
-                
+
                 const requestData = {
                     corp_code: corpCode,
                     bgn_de: startYear,
@@ -667,12 +667,12 @@
         // 🔧 차트 생성 함수들
         function createRevenueChart(data) {
             const ctx = document.getElementById('revenueChart').getContext('2d');
-            
+
             // 기존 차트 삭제
             if (revenueChart) {
                 revenueChart.destroy();
             }
-            
+
             revenueChart = new Chart(ctx, {
                 type: 'line',
                 data: {
@@ -714,12 +714,12 @@
 
         function createProfitChart(data) {
             const ctx = document.getElementById('profitChart').getContext('2d');
-            
+
             // 기존 차트 삭제
             if (profitChart) {
                 profitChart.destroy();
             }
-            
+
             profitChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
@@ -848,16 +848,16 @@
         // 🌟 외부에서 호출할 수 있는 메인 함수
         window.displayDashboard = async function(corpCode, startYear = '2020', endYear = '2023') {
             console.log(`대시보드 표시 요청: ${corpCode}`);
-            
+
             showLoading();
-            
+
             try {
                 const dashboardData = await fetchDashboardData(corpCode, startYear, endYear);
                 currentDashboardData = dashboardData;
                 renderDashboard(dashboardData);
-                
+
                 console.log('대시보드 표시 완료');
-                
+
             } catch (error) {
                 console.error('대시보드 표시 실패:', error);
                 showError(`대시보드 로드 실패: ${error.message}`);
@@ -876,14 +876,14 @@
 
         function handleMouseMove(e) {
             if (!isResizing) return;
-            
+
             const container = document.querySelector('.split-container');
             const leftPanel = document.querySelector('.left-panel');
             const rightPanel = document.querySelector('.right-panel');
-            
+
             const containerRect = container.getBoundingClientRect();
             const newLeftWidth = ((e.clientX - containerRect.left) / containerRect.width) * 100;
-            
+
             if (newLeftWidth > 20 && newLeftWidth < 80) {
                 leftPanel.style.flex = `0 0 ${newLeftWidth}%`;
                 rightPanel.style.flex = `0 0 ${100 - newLeftWidth}%`;
@@ -905,12 +905,12 @@
         function addMessage(role, content) {
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${role}`;
-            
+
             messageDiv.innerHTML = `
                 <div class="message-avatar">${role == 'user' ? '홍' : 'AI'}</div>
                 <div class="message-content">${content}</div>
             `;
-            
+
             messagesContainer.appendChild(messageDiv);
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
@@ -918,38 +918,38 @@
         async function sendMessage() {
             const message = chatInput.value.trim();
             if (!message) return;
-            
+
             // 사용자 메시지 추가
             addMessage('user', message);
             chatInput.value = '';
             chatInput.style.height = 'auto';
-            
+
             // 전송 버튼 비활성화
             sendButton.disabled = true;
-            
+
             // 로딩 메시지
             addMessage('assistant', '분석 중입니다... 잠시만 기다려주세요! 🔍');
-            
+
             try {
                 // Flask 서버로 메시지 전송
                 const response = await sendChatMessage(message);
-                
+
                 // 로딩 메시지 제거
                 const lastMessage = messagesContainer.lastElementChild;
                 if (lastMessage && lastMessage.textContent.includes('분석 중입니다')) {
                     lastMessage.remove();
                 }
-                
+
                 // AI 응답 추가
                 addMessage('assistant', response);
-                
+
             } catch (error) {
                 // 로딩 메시지 제거
                 const lastMessage = messagesContainer.lastElementChild;
                 if (lastMessage && lastMessage.textContent.includes('분석 중입니다')) {
                     lastMessage.remove();
                 }
-                
+
                 // 에러 메시지 추가
                 addMessage('assistant', `죄송합니다. 현재 응답을 생성할 수 없습니다. 서버 연결을 확인해주세요. (${error.message})`);
             } finally {
@@ -959,7 +959,7 @@
         }
 
         sendButton.addEventListener('click', sendMessage);
-        
+
         chatInput.addEventListener('keypress', function(e) {
             if (e.key == 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -1029,15 +1029,51 @@
             }
         };
 
-        // 🚀 페이지 로드 시 샘플 데이터로 시연 (개발용)
+        // 🔍 URL 파라미터에서 기업코드 가져오기
+        function getCorpCodeFromURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('corpCode') || urlParams.get('corp_code');
+        }
+
+        // 🚀 페이지 로드 시 URL 파라미터 기반 데이터 로드
         window.addEventListener('load', function() {
-            console.log('페이지 로드 완료 - 샘플 데이터로 시연');
-            setTimeout(() => {
-                currentDashboardData = sampleData;
-                renderDashboard(sampleData);
-                console.log('샘플 대시보드 표시 완료');
-            }, 1500);
+            console.log('페이지 로드 완료');
+
+            const corpCodeFromURL = getCorpCodeFromURL();
+
+            if (corpCodeFromURL) {
+                console.log(`URL에서 기업코드 발견: ${corpCodeFromURL}`);
+
+                // 실제 API 호출
+                displayDashboard(corpCodeFromURL, '2020', '2023');
+            } else {
+                console.log('기업코드가 제공되지 않음 - 대기 상태');
+                showWaitingState();
+            }
         });
+
+        // 📋 대기 상태 표시 함수
+        function showWaitingState() {
+            document.getElementById('companyName').textContent = '🏢 기업 분석 대시보드';
+            document.getElementById('analysisPeriod').textContent = 'URL에 ?corpCode=기업코드 파라미터를 추가해주세요';
+
+            // 뉴스 영역에 대기 메시지 표시
+            const newsArticles = document.getElementById('newsArticles');
+            if (newsArticles) {
+                newsArticles.innerHTML = `
+                    <div class="news-item">
+                        <div class="news-title">📊 기업 데이터를 기다리는 중...</div>
+                        <div class="news-summary">
+                            URL에 ?corpCode=00126380 (삼성전자) 형태로 기업코드를 추가해주세요.<br>
+                            예시: /chatBotDash?corpCode=00126380
+                        </div>
+                    </div>
+                `;
+            }
+
+            hideLoading();
+            document.getElementById('dashboard').style.display = 'block';
+        }
 
         // 🌟 디버깅용 헬퍼 함수들 (개발 중 콘솔에서 테스트 가능)
         window.testDashboard = function(corpCode = '00126380') {
@@ -1055,12 +1091,63 @@
             });
         };
 
-        console.log('🔧 Flask 연동 대시보드 초기화 완료');
+        // 🌐 외부 연동용 함수들 (POST 방식 지원)
+
+        // 1. 기업 선택 시 호출되는 함수 (팝업에서 사용)
+        window.onCompanySelected = function(corpCode) {
+            console.log(`🏢 기업 선택됨: ${corpCode}`);
+            displayDashboard(corpCode, '2020', '2023');
+        };
+
+        // 2. 기업 분석 시작 함수 (지윤님 코드와 호환)
+        window.startChatWithCompany = async function(corpCode) {
+            console.log(`🚀 기업 분석 시작: ${corpCode}`);
+
+            try {
+                await displayDashboard(corpCode, '2020', '2023');
+
+                if (currentDashboardData) {
+                    console.log('✅ 기업 분석 준비 완료');
+                    return {
+                        status: 'success',
+                        company_data: currentDashboardData,
+                        message: `${currentDashboardData.company_info.corp_name} 기업 분석 준비 완료`
+                    };
+                } else {
+                    throw new Error('대시보드 데이터 로드 실패');
+                }
+            } catch (error) {
+                console.error('❌ 기업 분석 시작 실패:', error);
+                return {
+                    status: 'error',
+                    message: error.message
+                };
+            }
+        };
+
+        // 3. 현재 로드된 기업 데이터 반환
+        window.getCurrentCompanyData = function() {
+            return currentDashboardData;
+        };
+
+        console.log('🔧 배포 서버 연동 대시보드 초기화 완료');
         console.log('📋 사용 가능한 함수들:');
-        console.log('  - displayDashboard(corpCode, startYear, endYear): 대시보드 표시');
-        console.log('  - testDashboard(corpCode): 테스트용 대시보드 표시');
-        console.log('  - testChat(message): 테스트용 채팅');
-        console.log(`🌐 Flask 서버: ${API_BASE_URL}`);
+        console.log('  🔹 내부 함수:');
+        console.log('    - displayDashboard(corpCode, startYear, endYear): 대시보드 표시');
+        console.log('    - testDashboard(corpCode): 테스트용 대시보드 표시');
+        console.log('    - testChat(message): 테스트용 채팅');
+        console.log('  🌐 외부 연동 함수:');
+        console.log('    - window.onCompanySelected(corpCode): 팝업에서 기업 선택');
+        console.log('    - window.startChatWithCompany(corpCode): 기업 분석 시작');
+        console.log('    - window.getCurrentCompanyData(): 현재 기업 데이터 반환');
+        console.log(`🌐 배포된 서버: ${API_BASE_URL}`);
+
+        const currentCorpCode = getCorpCodeFromURL();
+        if (currentCorpCode) {
+            console.log(`🏢 현재 기업코드: ${currentCorpCode}`);
+        } else {
+            console.log('⚠️ 기업코드가 제공되지 않음 - 대기 상태');
+        }
     </script>
 </body>
 </html>
