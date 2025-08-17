@@ -263,9 +263,9 @@ function showYearSelectionModal(corpCode, corpName, ceoName, businessName, stock
             
             <div style="margin-bottom: 20px;">
                 <label style="display: block; margin-bottom: 5px; font-weight: bold;">종료 연도:</label>
-                <select id="endYear" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-                    ${generateYearOptions(2005, 2025, 2025)}
-                </select>
+                                            <select id="endYear" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                                ${generateYearOptions(2005, 2025, new Date().getFullYear())}
+                            </select>
             </div>
             
             <div style="display: flex; gap: 10px; justify-content: flex-end;">

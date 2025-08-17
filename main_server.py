@@ -689,6 +689,8 @@ def generate_dashboard_data(corp_code: str, bgn_de: str, end_de: str, user_info:
     latest_year = years_sorted[-1] if years_sorted else end_de
     latest_financial = _mcp_extract_summary_from_statements(corp_code, str(latest_year), year_range)
 
+
+
     # 뉴스 데이터 (실시간 최신 뉴스 고정)
     news_articles = search_news_perplexity(corp_name, "3days")
 
@@ -707,6 +709,7 @@ def generate_dashboard_data(corp_code: str, bgn_de: str, end_de: str, user_info:
             'total_debt': latest_financial.get('total_debt', 0),
             'total_equity': latest_financial.get('total_equity', 0)
         },
+
         'yearly_trends': {
             'years': years_sorted,
             'revenue': revenue_trend or [0.0]*len(years_sorted),
@@ -2252,5 +2255,86 @@ def get_single_company_indicators(corp_code):
         logger.error(f"단일 기업 지표 조회 오류: {e}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/long-term-analysis/<corp_code>', methods=['GET'])
+def get_long_term_analysis(corp_code):
+    """장기 재무 분석 (10년)"""
+    try:
+        period = int(request.args.get('period', '10'))
+        
+        if _MCP_SVC is None:
+            return jsonify({'error': 'MCP 서비스가 초기화되지 않았습니다'}), 500
+        
+        # 장기 시계열 분석
+        analysis_result = _MCP_SVC.analyze_time_series(corp_code, period)
+        if not analysis_result.get('ok'):
+            return jsonify({'error': analysis_result.get('error', '장기 분석 실패')}), 500
+        
+        return jsonify(analysis_result.get('data', {}))
+        
+    except Exception as e:
+        logger.error(f"장기 재무 분석 오류: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/rim-valuation/<corp_code>', methods=['GET'])
+def get_rim_valuation(corp_code):
+    """RIM 기업가치 평가"""
+    try:
+        year = request.args.get('year', '2023')
+        industry = request.args.get('industry', '제조')
+        
+        if _MCP_SVC is None:
+            return jsonify({'error': 'MCP 서비스가 초기화되지 않았습니다'}), 500
+        
+        # RIM 가치 계산
+        rim_result = _MCP_SVC.calculate_rim_value(corp_code, year, industry)
+        if not rim_result.get('ok'):
+            return jsonify({'error': rim_result.get('error', 'RIM 계산 실패')}), 500
+        
+        return jsonify(rim_result.get('data', {}))
+        
+    except Exception as e:
+        logger.error(f"RIM 가치 평가 오류: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/valuation-comparison/<corp_code>', methods=['GET'])
+def get_valuation_comparison(corp_code):
+    """절대가치 vs 상대가치 비교"""
+    try:
+        year = request.args.get('year', '2023')
+        
+        if _MCP_SVC is None:
+            return jsonify({'error': 'MCP 서비스가 초기화되지 않았습니다'}), 500
+        
+        # 가치평가 비교
+        comparison_result = _MCP_SVC.compare_valuation_methods(corp_code, year)
+        if not comparison_result.get('ok'):
+            return jsonify({'error': comparison_result.get('error', '가치평가 비교 실패')}), 500
+        
+        return jsonify(comparison_result.get('data', {}))
+        
+    except Exception as e:
+        logger.error(f"가치평가 비교 오류: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/advanced-charts/<corp_code>', methods=['GET'])
+def get_advanced_charts(corp_code):
+    """고급 차트 데이터 (워터폴, 스파이더, 히트맵)"""
+    try:
+        year = request.args.get('year', '2023')
+        
+        if _MCP_SVC is None:
+            return jsonify({'error': 'MCP 서비스가 초기화되지 않았습니다'}), 500
+        
+        # 고급 차트 데이터 생성
+        charts_result = _MCP_SVC.generate_advanced_chart_data(corp_code, year)
+        if not charts_result.get('ok'):
+            return jsonify({'error': charts_result.get('error', '고급 차트 데이터 생성 실패')}), 500
+        
+        return jsonify(charts_result.get('data', {}))
+        
+    except Exception as e:
+        logger.error(f"고급 차트 데이터 생성 오류: {e}")
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5001, debug=True)(host='0.0.0.0', port=5001, debug=True)
+    app.run(host='0.0.0.0', port=5001, debug=True)

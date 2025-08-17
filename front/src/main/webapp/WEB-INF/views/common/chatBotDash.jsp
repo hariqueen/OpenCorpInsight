@@ -452,6 +452,93 @@
             font-weight: bold;
         }
 
+        /* 고급 차트 스타일 */
+        .advanced-charts-section {
+            margin: 30px 0;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .chart-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 15px;
+        }
+
+        .tab-button {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 25px;
+            padding: 10px 20px;
+            color: rgba(255, 255, 255, 0.7);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+
+        .tab-button:hover {
+            background: rgba(0, 212, 255, 0.1);
+            border-color: #00d4ff;
+            color: #00d4ff;
+        }
+
+        .tab-button.active {
+            background: rgba(0, 212, 255, 0.2);
+            border-color: #00d4ff;
+            color: #00d4ff;
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+        }
+
+        .tab-icon {
+            font-size: 1.1rem;
+        }
+
+        .tab-label {
+            font-weight: 500;
+        }
+
+        .tab-content {
+            position: relative;
+        }
+
+        .tab-pane {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .tab-pane.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 차트 컨테이너 개선 */
+        .chart-container {
+            position: relative;
+            height: 400px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 10px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .chart-container canvas {
+            max-height: 100%;
+            width: 100% !important;
+        }
+
+
+
         .chat-input-container {
             padding: 30px 20px 40px 20px;
             background: transparent;
@@ -609,6 +696,37 @@
                     </div>
                 </div>
 
+                <!-- 고급 차트 섹션 -->
+                <div class="advanced-charts-section">
+                    <h3 class="chart-title">🎯 고급 분석 차트</h3>
+                    
+                    <!-- 차트 탭 -->
+                    <div class="chart-tabs">
+                        <button class="tab-button active" data-tab="spider">
+                            <span class="tab-icon">🕷️</span>
+                            <span class="tab-label">종합 평가</span>
+                        </button>
+                        <button class="tab-button" data-tab="heatmap">
+                            <span class="tab-icon">🔥</span>
+                            <span class="tab-label">연도별 비교</span>
+                        </button>
+                    </div>
+                    
+                    <!-- 탭 콘텐츠 -->
+                    <div class="tab-content">
+                        <div id="spider-tab" class="tab-pane active">
+                            <div class="chart-container">
+                                <canvas id="spiderChart"></canvas>
+                            </div>
+                        </div>
+                        <div id="heatmap-tab" class="tab-pane">
+                            <div class="chart-container">
+                                <canvas id="heatmapChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- 뉴스 섹션 -->
                 <div class="news-section">
                     <h3 class="chart-title">📰 최신 뉴스</h3>
@@ -675,6 +793,8 @@
         let currentDashboardData = null; // 현재 대시보드 데이터
         let revenueChart = null;
         let profitChart = null;
+        let spiderChart = null;
+        let heatmapChart = null;
 
         // 🔧 API 호출 함수
         async function fetchDashboardData(corpCode, startYear = '2020', endYear = '2023') {
@@ -964,7 +1084,7 @@
         }
 
         // 🔧 대시보드 렌더링 함수
-        function renderDashboard(data) {
+        function renderDashboard(data, corpCode, year) {
             try {
                 // 기본 정보 표시
                 document.getElementById('companyName').textContent = data.company_info.corp_name;
@@ -1033,6 +1153,12 @@
                 // 차트 생성
                 createRevenueChart(data);
                 createProfitChart(data);
+                
+                // 고급 차트 데이터 로드 및 생성 (스파이더 차트와 히트맵만)
+                const availableYears = data.yearly_trends.years;
+                const latestYear = availableYears.length > 0 ? availableYears[availableYears.length - 1] : new Date().getFullYear().toString();
+                console.log(`📊 고급 차트용 연도 선택: ${latestYear} (사용 가능한 연도: ${availableYears.join(', ')})`);
+                loadAdvancedCharts(corpCode, latestYear);
 
                 // 로딩 숨기고 대시보드 표시
                 hideLoading();
@@ -1046,7 +1172,11 @@
         }
 
         // 🌟 외부에서 호출할 수 있는 메인 함수
-        window.displayDashboard = async function(corpCode, startYear = '2020', endYear = '2023') {
+        window.displayDashboard = async function(corpCode, startYear = '2020', endYear = null) {
+            // 현재 연도를 기본값으로 사용
+            if (!endYear) {
+                endYear = new Date().getFullYear().toString();
+            }
             console.log(`대시보드 표시 요청: ${corpCode}`);
 
             showLoading();
@@ -1054,7 +1184,7 @@
             try {
                 const dashboardData = await fetchDashboardData(corpCode, startYear, endYear);
                 currentDashboardData = dashboardData;
-                renderDashboard(dashboardData);
+                renderDashboard(dashboardData, corpCode, startYear);
 
                 console.log('대시보드 표시 완료');
 
@@ -1562,8 +1692,258 @@
         // 🌟 디버깅용 헬퍼 함수들 (개발 중 콘솔에서 테스트 가능)
         window.testDashboard = function(corpCode = '00126380') {
             console.log(`테스트: ${corpCode} 대시보드 표시`);
-            displayDashboard(corpCode);
+            const currentYear = new Date().getFullYear().toString();
+            displayDashboard(corpCode, '2020', currentYear);
         };
+
+        // 고급 차트 데이터 로드
+        async function loadAdvancedCharts(corpCode, year) {
+            try {
+                console.log('고급 차트 데이터 로드 시작');
+                
+                const response = await fetch(`${API_BASE_URL}/api/advanced-charts/${corpCode}?year=${year}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const chartData = await response.json();
+                console.log('고급 차트 데이터:', chartData);
+                
+                // 고급 차트 생성 (스파이더 차트와 히트맵만)
+                createSpiderChart(chartData.spider_chart);
+                createHeatmapChart(chartData.heatmap_chart);
+                
+                // 탭 이벤트 리스너 설정
+                setupTabListeners();
+                
+            } catch (error) {
+                console.error('고급 차트 데이터 로드 실패:', error);
+            }
+        }
+
+        // 탭 이벤트 리스너 설정
+        function setupTabListeners() {
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabPanes = document.querySelectorAll('.tab-pane');
+            
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const targetTab = button.getAttribute('data-tab');
+                    
+                    // 활성 탭 버튼 변경
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    
+                    // 활성 탭 콘텐츠 변경
+                    tabPanes.forEach(pane => pane.classList.remove('active'));
+                    document.getElementById(`${targetTab}-tab`).classList.add('active');
+                });
+            });
+        }
+
+
+
+        // 스파이더 차트 생성
+        function createSpiderChart(data) {
+            if (!data) {
+                console.warn('스파이더 차트 데이터 없음');
+                return;
+            }
+            
+            if (data.error || !data.dimensions || data.dimensions.length === 0) {
+                console.warn('스파이더 차트 데이터 오류:', data?.error || '차원 데이터 없음');
+                // 스파이더 차트 영역에 오류 메시지 표시
+                const spiderTab = document.getElementById('spider-tab');
+                if (spiderTab) {
+                    spiderTab.innerHTML = `
+                        <div class="chart-container">
+                            <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: rgba(255, 255, 255, 0.7);">
+                                <div style="text-align: center;">
+                                    <div style="font-size: 3rem; margin-bottom: 10px;">🕷️</div>
+                                    <div style="font-size: 1.1rem; margin-bottom: 5px;">종합 재무 평가 데이터 없음</div>
+                                    <div style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.5);">
+                                        ${data?.error || '재무비율 데이터를 찾을 수 없습니다.'}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                return;
+            }
+            
+            const ctx = document.getElementById('spiderChart').getContext('2d');
+            
+            if (spiderChart) {
+                spiderChart.destroy();
+            }
+            
+            const dimensions = data.dimensions || [];
+            const labels = dimensions.map(d => d.name);
+            const companyData = dimensions.map(d => d.company);
+
+            
+            spiderChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: '재무 지표',
+                            data: companyData,
+                            backgroundColor: 'rgba(0, 212, 255, 0.2)',
+                            borderColor: '#00d4ff',
+                            borderWidth: 2,
+                            pointBackgroundColor: '#00d4ff',
+                            pointBorderColor: '#ffffff',
+                            pointBorderWidth: 2
+                        }
+
+
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: data.title || '종합 재무 평가',
+                            color: 'rgba(255, 255, 255, 0.9)',
+                            font: { size: 16, weight: 'bold' }
+                        },
+                        legend: {
+                            labels: { color: 'rgba(255, 255, 255, 0.8)' }
+                        }
+                    },
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                color: 'rgba(255, 255, 255, 0.8)',
+                                stepSize: 20
+                            },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                            pointLabels: { color: 'rgba(255, 255, 255, 0.8)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 히트맵 차트 생성
+        function createHeatmapChart(data) {
+            if (!data) {
+                console.warn('히트맵 차트 데이터 없음');
+                return;
+            }
+            
+            if (data.error || !data.data || data.data.length === 0) {
+                console.warn('히트맵 차트 데이터 오류:', data?.error || '데이터 없음');
+                // 히트맵 차트 영역에 오류 메시지 표시
+                const heatmapTab = document.getElementById('heatmap-tab');
+                if (heatmapTab) {
+                    heatmapTab.innerHTML = `
+                        <div class="chart-container">
+                            <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: rgba(255, 255, 255, 0.7);">
+                                <div style="text-align: center;">
+                                    <div style="font-size: 3rem; margin-bottom: 10px;">🔥</div>
+                                    <div style="font-size: 1.1rem; margin-bottom: 5px;">연도별 비교 데이터 없음</div>
+                                    <div style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.5);">
+                                        ${data?.error || '연도별 재무 데이터를 찾을 수 없습니다.'}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                return;
+            }
+            
+            const ctx = document.getElementById('heatmapChart').getContext('2d');
+            
+            if (heatmapChart) {
+                heatmapChart.destroy();
+            }
+            
+            const heatmapData = data.data || [];
+            const years = [...new Set(heatmapData.map(item => item.x))];
+            const indicators = [...new Set(heatmapData.map(item => item.y))];
+            
+            const datasets = indicators.map(indicator => {
+                const indicatorData = heatmapData.filter(item => item.y === indicator);
+                const data = years.map(year => {
+                    const item = indicatorData.find(d => d.x === year);
+                    return item ? item.value : 0;
+                });
+                
+                // 지표명을 사용자 친화적으로 변경
+                let displayLabel = indicator;
+                let backgroundColor = '';
+                
+                if (indicator === 'OPM') {
+                    displayLabel = '영업이익률';
+                    backgroundColor = 'rgba(52, 152, 219, 0.8)';  // 파란색
+                } else if (indicator === 'ROE') {
+                    displayLabel = 'ROE';
+                    backgroundColor = 'rgba(46, 204, 113, 0.8)';  // 초록색
+                } else if (indicator === 'ROA') {
+                    displayLabel = 'ROA';
+                    backgroundColor = 'rgba(155, 89, 182, 0.8)';  // 보라색
+                } else if (indicator === '부채비율') {
+                    displayLabel = '부채비율';
+                    backgroundColor = 'rgba(230, 126, 34, 0.8)';  // 주황색
+                } else if (indicator === '유동비율') {
+                    displayLabel = '유동비율';
+                    backgroundColor = 'rgba(231, 76, 60, 0.8)';  // 빨간색
+                } else {
+                    backgroundColor = 'rgba(149, 165, 166, 0.8)';  // 회색 (기본값)
+                }
+                
+                return {
+                    label: displayLabel,
+                    data: data,
+                    backgroundColor: backgroundColor,
+                    borderColor: '#ffffff',
+                    borderWidth: 1
+                };
+            });
+            
+            heatmapChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: years,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: data.title || '연도별 재무 지표 비교',
+                            color: 'rgba(255, 255, 255, 0.9)',
+                            font: { size: 16, weight: 'bold' }
+                        },
+                        legend: {
+                            labels: { color: 'rgba(255, 255, 255, 0.8)' }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { color: 'rgba(255, 255, 255, 0.8)' },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                        },
+                        x: {
+                            ticks: { color: 'rgba(255, 255, 255, 0.8)' },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                        }
+                    }
+                }
+            });
+        }
 
         window.testChat = function(message = '이 회사 어떤가요?') {
             console.log(`테스트 채팅: ${message}`);
@@ -1580,7 +1960,8 @@
         // 1. 기업 선택 시 호출되는 함수 (팝업에서 사용) - 함수명 변경으로 충돌 방지
         window.onCompanySelectedFromDashboard = function(corpCode) {
             console.log(`🏢 대시보드에서 기업 선택됨: ${corpCode}`);
-            displayDashboard(corpCode, '2020', '2023');
+            const currentYear = new Date().getFullYear().toString();
+            displayDashboard(corpCode, '2020', currentYear);
         };
 
         // 2. 기업 분석 시작 함수 (지윤님 코드와 호환)
@@ -1588,7 +1969,8 @@
             console.log(`🚀 기업 분석 시작: ${corpCode}`);
 
             try {
-                await displayDashboard(corpCode, '2020', '2023');
+                const currentYear = new Date().getFullYear().toString();
+                await displayDashboard(corpCode, '2020', currentYear);
 
                 if (currentDashboardData) {
                     console.log('✅ 기업 분석 준비 완료');
