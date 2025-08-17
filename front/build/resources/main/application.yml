@@ -1,0 +1,19 @@
+server:
+  port: 8081
+
+spring:
+  mvc:
+    view:
+      prefix: /WEB-INF/views/
+      suffix: .jsp
+  
+  datasource:
+    url: jdbc:sqlite:/home/ubuntu/chatbot.db
+    driver-class-name: org.sqlite.JDBC
+  
+  jpa:
+    hibernate:
+      ddl-auto: none
+
+mybatis:
+  mapper-locations: classpath*:mappers/*.xml
