@@ -241,7 +241,7 @@
 
             // 성공 메시지
             alert('회원가입이 완료되었습니다! 🎉');
-            window.location.href = '/';
+            window.location.href = '/login';
             // 여기에 실제 서버 전송 코드 추가
             // fetch('/api/signup', { method: 'POST', body: JSON.stringify(formData) })
         });
