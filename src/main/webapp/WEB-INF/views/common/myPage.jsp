@@ -104,12 +104,12 @@
     <form id="profileForm">
         <div class="form-group">
             <label class="form-label" for="userId">아이디</label>
-            <input type="text" id="userId" name="userId" value="hardcoded_user" readonly>
+            <input type="text" id="userId" name="userId" value="test1234@test.com" readonly>
         </div>
 
         <div class="form-group">
             <label class="form-label" for="nickname">닉네임</label>
-            <input type="text" id="nickname" name="nickname" value="지윤">
+            <input type="text" id="nickname" name="nickname" value="하태지">
         </div>
 
         <div class="form-group">
