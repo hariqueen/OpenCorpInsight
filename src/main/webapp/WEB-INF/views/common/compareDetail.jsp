@@ -296,11 +296,7 @@
     </style>
 </head>
 <body>
-    <div class="header">
-        <div></div>
-        <div class="user-icon">👤</div>
-    </div>
-
+<%@ include file="/WEB-INF/views/layout/sideMenu.jsp" %>
     <div class="main-container">
         <div class="vs-header">
             <h1 class="vs-title">VS</h1>
@@ -588,7 +584,6 @@
         }
 
         function openDetailAnalysis() {
-            alert('기업 분석 페이지로 이동합니다.');
             window.location.href = '/compare';
         }
 
