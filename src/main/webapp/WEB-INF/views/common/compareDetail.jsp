@@ -435,35 +435,11 @@
     </div>
 
     <script>
-        // URL 파라미터에서 기업 정보 읽기
-        function getUrlParameter(name) {
-            const urlParams = new URLSearchParams(window.location.search);
-            return urlParams.get(name);
-        }
-
-        // 선택된 기업 정보
-        const selectedCompanies = {
-            company1: {
-                corp_code: getUrlParameter('corp1Code'),
-                corp_name: getUrlParameter('corp1Name'),
-                ceo_name: getUrlParameter('corp1Ceo'),
-                business_name: getUrlParameter('corp1Business')
-            },
-            company2: {
-                corp_code: getUrlParameter('corp2Code'),
-                corp_name: getUrlParameter('corp2Name'),
-                ceo_name: getUrlParameter('corp2Ceo'),
-                business_name: getUrlParameter('corp2Business')
-            }
-        };
-
-        console.log('선택된 기업들:', selectedCompanies);
-
-        // 기본 데이터 (실제로는 API에서 받아옴)
+        // 샘플 데이터 (실제로는 API에서 받아옴)
         const comparisonData = {
             "comparison_info": {
-                "company1": {"corp_name": selectedCompanies.company1.corp_name || "기업1"},
-                "company2": {"corp_name": selectedCompanies.company2.corp_name || "기업2"}
+                "company1": {"corp_name": "삼성전자"},
+                "company2": {"corp_name": "LG"}
             },
             "basic_financial_comparison": {
                 "company1": {
@@ -490,9 +466,9 @@
                 }
             },
             "comparison_summary": {
-                "revenue_comparison": {"winner": selectedCompanies.company1.corp_name || "기업1"},
-                "profitability_comparison": {"winner": selectedCompanies.company1.corp_name || "기업1"},
-                "asset_comparison": {"winner": selectedCompanies.company1.corp_name || "기업1"}
+                "revenue_comparison": {"winner": "삼성전자"},
+                "profitability_comparison": {"winner": "삼성전자"},
+                "asset_comparison": {"winner": "삼성전자"}
             }
         };
 
@@ -620,88 +596,9 @@
             alert('AI 채팅을 시작합니다.');
         }
 
-        // Flask 백엔드에서 실제 기업 데이터 가져오기
-        async function loadRealCompanyData() {
-            try {
-                console.log('실제 기업 데이터를 가져오는 중...');
-                
-                // 두 기업의 대시보드 데이터를 가져오기 (로컬 Flask 백엔드)
-                const [company1Data, company2Data] = await Promise.all([
-                    fetch(`http://localhost:5001/api/dashboard/${selectedCompanies.company1.corp_code}?start_year=2020&end_year=2023`),
-                    fetch(`http://localhost:5001/api/dashboard/${selectedCompanies.company2.corp_code}?start_year=2020&end_year=2023`)
-                ]);
-
-                if (!company1Data.ok || !company2Data.ok) {
-                    throw new Error('대시보드 데이터를 가져올 수 없습니다.');
-                }
-
-                const [response1, response2] = await Promise.all([
-                    company1Data.json(),
-                    company2Data.json()
-                ]);
-
-                console.log('가져온 대시보드 데이터 응답:', { response1, response2 });
-
-                // API 응답에서 financial_data 추출 (대시보드 응답 구조에 맞게)
-                const data1 = response1.financial_data || response1.data?.financial_data || response1;
-                const data2 = response2.financial_data || response2.data?.financial_data || response2;
-
-                console.log('추출된 재무 데이터:', { data1, data2 });
-
-                // 실제 데이터로 대시보드 업데이트
-                const realComparisonData = {
-                    "comparison_info": {
-                        "company1": {"corp_name": selectedCompanies.company1.corp_name},
-                        "company2": {"corp_name": selectedCompanies.company2.corp_name}
-                    },
-                    "basic_financial_comparison": {
-                        "company1": data1,
-                        "company2": data2
-                    },
-                    "financial_indicators_comparison": {
-                        "profitability": {
-                            "company1": {"ROE": calculateROE(data1)},
-                            "company2": {"ROE": calculateROE(data2)}
-                        },
-                        "stability": {
-                            "company1": {"부채비율": calculateDebtRatio(data1)},
-                            "company2": {"부채비율": calculateDebtRatio(data2)}
-                        }
-                    },
-                    "comparison_summary": {
-                        "revenue_comparison": {"winner": data1.revenue > data2.revenue ? selectedCompanies.company1.corp_name : selectedCompanies.company2.corp_name},
-                        "profitability_comparison": {"winner": data1.net_profit > data2.net_profit ? selectedCompanies.company1.corp_name : selectedCompanies.company2.corp_name},
-                        "asset_comparison": {"winner": data1.total_assets > data2.total_assets ? selectedCompanies.company1.corp_name : selectedCompanies.company2.corp_name}
-                    }
-                };
-
-                updateDashboard(realComparisonData);
-
-            } catch (error) {
-                console.error('실제 데이터 로드 실패:', error);
-                console.log('기본 데이터로 대시보드 표시');
-                updateDashboard(comparisonData);
-            }
-        }
-
-        // ROE 계산 (순이익 / 자기자본)
-        function calculateROE(financialData) {
-            const netProfit = financialData.net_profit || 0;
-            const totalEquity = financialData.total_equity || 1;
-            return ((netProfit / totalEquity) * 100).toFixed(2);
-        }
-
-        // 부채비율 계산 (총부채 / 자기자본 * 100)
-        function calculateDebtRatio(financialData) {
-            const totalDebt = financialData.total_debt || 0;
-            const totalEquity = financialData.total_equity || 1;
-            return ((totalDebt / totalEquity) * 100).toFixed(2);
-        }
-
         // 페이지 로드 시 데이터 업데이트
         window.onload = function() {
-            // 실제 데이터 로드 시도, 실패시 기본 데이터 사용
-            loadRealCompanyData();
+            updateDashboard(comparisonData);
         };
 
         // 실제 API 데이터로 업데이트하는 함수

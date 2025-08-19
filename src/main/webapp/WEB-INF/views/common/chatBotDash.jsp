@@ -540,43 +540,32 @@
 
     <script>
         // 🔧 Flask 서버 연동 설정
-        const API_BASE_URL = 'http://localhost:5001'; // 로컬 Flask 백엔드
+        const API_BASE_URL = 'http://43.203.170.37:5001'; // 배포된 서버 주소
         let currentDashboardData = null; // 현재 대시보드 데이터
         let revenueChart = null;
         let profitChart = null;
 
-        // 🔧 API 호출 함수
+        // 🔧 API 호출 함수 (GET 방식으로 변경)
         async function fetchDashboardData(corpCode, startYear = '2020', endYear = '2023') {
             try {
                 console.log(`대시보드 데이터 요청: ${corpCode} (${startYear}-${endYear})`);
 
-                const requestData = {
-                    corp_code: corpCode,
-                    bgn_de: startYear,
-                    end_de: endYear,
-                    user_sno: 'web_user',
-                    nickname: '웹사용자',
-                    difficulty: 'intermediate',
-                    interest: '기술주',
-                    purpose: '투자분석'
-                };
+                // GET 방식 API 호출
+                const url = `${API_BASE_URL}/api/dashboard/${corpCode}?start_year=${startYear}&end_year=${endYear}`;
+                console.log(`🌐 API 호출: ${url}`);
 
-                const response = await fetch(`${API_BASE_URL}/api/dashboard`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(requestData)
-                });
+                const response = await fetch(url);
 
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => ({}));
-                    throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+                    throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
                 }
 
                 const data = await response.json();
                 console.log('대시보드 데이터 수신:', data);
-                return data;
+
+                // GET API는 data.data 구조로 응답
+                return data.data;
 
             } catch (error) {
                 console.error('대시보드 데이터 요청 실패:', error);
