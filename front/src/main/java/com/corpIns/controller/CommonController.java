@@ -16,7 +16,7 @@ public class CommonController {
 
     @GetMapping("/chatBot")
     public String chatBot() {
-        return "common/chatBot"; // /WEB-INF/views/common/chatBot.jsp
+        return "chatBot"; // /WEB-INF/views/chatBot.jsp
     }
 
     @GetMapping("/home")

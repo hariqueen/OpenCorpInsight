@@ -85,6 +85,13 @@
             display: inline-block;
             margin-bottom: 15px;
             box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .ai-badge:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(0, 212, 255, 0.5);
         }
 
         .company-title {
@@ -1236,7 +1243,7 @@
             const messagesContainer = document.getElementById('messagesContainer');
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${role}`;
-            
+
             const avatar = document.createElement('div');
             avatar.className = 'message-avatar';
             avatar.textContent = role === 'user' ? '나' : 'AI';
@@ -1630,10 +1637,10 @@
                 console.log('현재 URL:', window.location.href);
                 console.log('URL 파라미터:', window.location.search);
 
-                const corpCodeFromURL = getCorpCodeFromURL();
+            const corpCodeFromURL = getCorpCodeFromURL();
                 console.log('추출된 기업코드:', corpCodeFromURL);
 
-                            if (corpCodeFromURL) {
+            if (corpCodeFromURL) {
                 const startYear = getStartYearFromURL();
                 const endYear = getEndYearFromURL();
                 
@@ -2007,6 +2014,17 @@
         console.log('    - window.startChatWithCompany(corpCode): 기업 분석 시작');
         console.log('    - window.getCurrentCompanyData(): 현재 기업 데이터 반환');
         console.log(`🌐 배포된 서버: ${API_BASE_URL}`);
+
+        // 🏠 홈으로 돌아가기 버튼 이벤트
+        document.addEventListener('DOMContentLoaded', function() {
+            const homeButton = document.querySelector('.ai-badge');
+            if (homeButton) {
+                homeButton.addEventListener('click', function() {
+                    console.log('🏠 홈으로 돌아가기 클릭됨');
+                    window.location.href = 'http://localhost:8081/';
+                });
+            }
+        });
 
         const currentCorpCode = getCorpCodeFromURL();
         if (currentCorpCode) {

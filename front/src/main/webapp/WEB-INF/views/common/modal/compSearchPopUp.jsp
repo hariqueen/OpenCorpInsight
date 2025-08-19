@@ -124,8 +124,24 @@
 // Spring Boot 백엔드 API 주소
 const BACKEND_API = "/api/search";
 
-// 검색 버튼
-document.getElementById("popupSearchBtn").addEventListener("click", async function () {
+// URL 파라미터에서 검색 텍스트 가져오기
+function getSearchTextFromURL() {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('searchText') || '';
+}
+
+// 페이지 로드 시 검색 텍스트 설정
+window.addEventListener('load', function() {
+    const searchText = getSearchTextFromURL();
+    if (searchText) {
+        document.getElementById('popupSearchInput').value = searchText;
+        // 자동으로 검색 실행
+        performSearch();
+    }
+});
+
+// 검색 함수
+async function performSearch() {
     const keyword = document.getElementById("popupSearchInput").value.trim();
     const resultBody = document.getElementById("popupResultBody");
     resultBody.innerHTML = "";
@@ -197,6 +213,16 @@ document.getElementById("popupSearchBtn").addEventListener("click", async functi
     } catch (err) {
         console.error("검색 실패:", err);
         resultBody.innerHTML = `<tr><td colspan="4">오류 발생: ${err.message}</td></tr>`;
+    }
+}
+
+// 검색 버튼 클릭 이벤트
+document.getElementById("popupSearchBtn").addEventListener("click", performSearch);
+
+// Enter 키 이벤트
+document.getElementById("popupSearchInput").addEventListener("keydown", function(e) {
+    if (e.key === 'Enter') {
+        performSearch();
     }
 });
 

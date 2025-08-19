@@ -61,7 +61,12 @@ const searchBtn = document.getElementById('searchBtn');
 
 // 팝업 열기
 function openSearchPopup() {
-    window.open('/compare/compSearchPopUp', 'companyPopup', 'width=700,height=800,scrollbars=yes,resizable=yes');
+    const searchText = mainSearchInput.value.trim();
+    let popupUrl = '/compare/compSearchPopUp';
+    if (searchText) {
+        popupUrl += '?searchText=' + encodeURIComponent(searchText);
+    }
+    window.open(popupUrl, 'companyPopup', 'width=700,height=800,scrollbars=yes,resizable=yes');
 }
 
 // 검색 버튼/엔터 이벤트

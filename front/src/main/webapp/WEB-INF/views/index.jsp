@@ -157,6 +157,86 @@
         .blue-bar {
             background-color: #9ccafc;
         }
+
+        .video-container {
+            width: 100%;
+            max-width: 600px;
+            margin: 20px auto;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .video-container video {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .video-container img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .comparison-section {
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .comparison-title {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .title {
+            font-family: 'Poppins', 'Pretendard', sans-serif;
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 20px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            letter-spacing: 0.5px;
+        }
+
+        .vs-select {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .vs-button {
+            width: 80px;
+            height: 60px;
+            background: white;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Poppins', 'Pretendard', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 300;
+            color: #161e63;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
+        }
+
+        .vs-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(255, 255, 255, 0.3);
+        }
+
+        .vs-text {
+            font-family: 'Poppins', 'Pretendard', sans-serif;
+            font-size: 2rem;
+            font-weight: bold;
+            color: white;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            letter-spacing: 0.5px;
+        }
     </style>
 </head>
 <body>
@@ -166,54 +246,20 @@
     <h1>어려운 재무제표? 한 줄로 물어보세요.</h1>
     <h1>기업 실적부터 리스크 이슈까지, AI 챗봇이 똑똑하게 정리해드립니다.</h1>
 
-    <img src="/images/chatBotEX.png" alt="chatbot 이미지" class="fade-img">
+    <img src="/images/KakaoTalk_Photo_2025-08-19-17-39-28.gif" alt="chatbot 이미지" class="fade-img">
     <a href="/chatBot" class="continue-btn">AI 챗봇 바로가기</a>
 
-    <h1>업계의 왕좌는 누구?</h1>
-    <h1>매치업을 만들어보세요!</h1>
-    <img src="/images/compareEX.png" alt="compare 이미지" class="fade-img">
-
-    <div class="compare-title">식품업계 진짜 승자는?</div>
-
-    <div class="compare-box">
-        <div class="company">
-            <img src="/images/ottogi.jpeg" alt="오뚜기"><br>오뚜기
-        </div>
-        <div class="vs-text">VS</div>
-        <div class="company">
-            <img src="/images/cj.png" alt="CJ제일제당" style=" display: block !important; "><br>CJ
-        </div>
-    </div>
-
-    <div class="stats">
-        <div class="stat-group">
-            <div class="stat">
-                <div class="bar red-bar" style="width: 89%"></div>
-                <div>89점<br>부채, 자산 등</div>
-            </div>
-            <div class="stat">
-                <div class="bar red-bar" style="width: 70%"></div>
-                <div>1조 2,123억<br>매출액</div>
-            </div>
-            <div class="stat">
-                <div class="bar red-bar" style="width: 65%"></div>
-                <div>영업이익</div>
+    <div class="comparison-section">
+        <div class="comparison-title">
+            <div class="title">업계의 왕좌는 누구? <br>매치업을 만들어보세요!</div>
+            <div class="vs-select">
+                <div class="vs-button">+</div>
+                <div class="vs-text">VS</div>
+                <div class="vs-button">+</div>
             </div>
         </div>
-
-        <div class="stat-group">
-            <div class="stat">
-                <div class="bar blue-bar" style="width: 92%"></div>
-                <div>92.1점<br>부채, 자산 등</div>
-            </div>
-            <div class="stat">
-                <div class="bar blue-bar" style="width: 80%"></div>
-                <div>1조 1,230억<br>매출액</div>
-            </div>
-            <div class="stat">
-                <div class="bar blue-bar" style="width: 75%"></div>
-                <div>영업이익</div>
-            </div>
+        <div class="video-container">
+            <img src="/images/social_u3814867885_httpss.gif" alt="비교 애니메이션" class="fade-img">
         </div>
     </div>
 

@@ -1771,7 +1771,7 @@ def chat_endpoint():
             
             if analysis_result['has_company_mention'] and analysis_result['intent'] == 'company_analysis':
                 # 기업 분석이 필요한 경우 팝업 유도
-                response_message = "구체적인 기업 분석을 위해 정확한 기업 정보가 필요합니다. 기업을 검색하여 상세한 재무 분석을 받아보세요."
+                response_message = "구체적인 기업 분석을 위해 정확한 기업 정보가 필요합니다. 기업을 검색하여 상세한 재무 분석을 받아보세요. 아래의 기업검색 버튼을 눌러주세요."
                 
                 # 채팅 기록 저장 (팝업 유도 메시지도 저장)
                 save_success = save_chat_to_db(user_info['user_sno'], message, response_message, 'general_popup')

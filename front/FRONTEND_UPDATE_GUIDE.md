@@ -143,7 +143,7 @@ spring:
       prefix: /WEB-INF/views/
       suffix: .jsp
   
-  # 데이터베이스 설정 추가
+  # 데이터베이스 설정 추가c
   datasource:
     url: jdbc:sqlite:/home/ubuntu/chatbot.db
     driver-class-name: org.sqlite.JDBC

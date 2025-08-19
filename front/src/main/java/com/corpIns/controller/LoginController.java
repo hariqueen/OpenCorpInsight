@@ -108,4 +108,30 @@ public class LoginController {
         result.put("status", "ok");
         return result;
     }
+
+    @GetMapping("/checkLogin")
+    @ResponseBody
+    public Map<String, Object> checkLogin(HttpSession session) {
+        Map<String, Object> result = new HashMap<>();
+        User loginUser = (User) session.getAttribute("loginUser");
+        
+        if (loginUser != null) {
+            result.put("status", "logged_in");
+            result.put("user", loginUser);
+        } else {
+            result.put("status", "not_logged_in");
+        }
+        
+        return result;
+    }
+
+    @GetMapping("/mockUsers")
+    @ResponseBody
+    public Map<String, Object> getMockUsers() {
+        Map<String, Object> result = new HashMap<>();
+        userService.printMockUsers();
+        result.put("status", "success");
+        result.put("message", "콘솔에서 Mock 사용자 목록을 확인하세요");
+        return result;
+    }
 }
