@@ -7,6 +7,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 @Controller
 public class CommonController {
+    @GetMapping("/")
+    public String root() {
+        return "index"; // /WEB-INF/views/index.jsp
+    }
+
     @GetMapping("/compare")
     public String comparePage() {
         return "common/compare"; // /WEB-INF/views/common/compare.jsp
@@ -19,7 +24,7 @@ public class CommonController {
 
     @GetMapping("/home")
     public String homePage() {
-        return "main"; //  /WEB-INF/views/index.jsp
+        return "index"; //  /WEB-INF/views/index.jsp
     }
 
     @GetMapping("/myPage")

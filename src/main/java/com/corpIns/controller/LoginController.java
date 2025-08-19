@@ -3,6 +3,7 @@ package com.corpIns.controller;
 import com.corpIns.dto.User;
 import com.corpIns.service.UserService;
 import jakarta.servlet.http.HttpSession;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
@@ -51,6 +52,8 @@ public class LoginController {
         Map<String, Object> result = new HashMap<>();
 
         try {
+            // 이메일 정규화
+            email = email == null ? null : email.trim().toLowerCase();
             // 이메일 중복 체크
             User existing = userService.findByEmail(email);
             if (existing != null) {
@@ -76,6 +79,10 @@ public class LoginController {
             userService.insertUser(param);
 
             result.put("status", "success");
+        } catch (DataIntegrityViolationException e) {
+            // DB 유니크 제약 위반 시
+            result.put("status", "fail");
+            result.put("message", "사용중인 이메일입니다");
         } catch (Exception e) {
             result.put("status", "fail");
             result.put("message", e.getMessage());
@@ -103,6 +110,8 @@ public class LoginController {
                                            @RequestParam String password,
                                            HttpSession session) {
         Map<String, Object> result = new HashMap<>();
+        // 이메일 정규화
+        email = email == null ? null : email.trim().toLowerCase();
         User user = userService.findByEmail(email);
 
         if (user != null && passwordEncoder.matches(password, user.getPasswordHash())) {
