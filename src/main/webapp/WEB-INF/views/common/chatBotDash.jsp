@@ -540,17 +540,13 @@
 
     <script>
         // 🔧 Flask 서버 연동 설정
-        const API_BASE_URL = 'http://43.203.170.37:5001'; // 배포된 서버 주소
-        let currentDashboardData = null; // 현재 대시보드 데이터
-        let revenueChart = null;
-        let profitChart = null;
+        // 🔧 API 서버 주소만 JSON 호출용
+        const API_BASE_URL = 'http://43.203.170.37:5001'; // JSON API 서버
+        let currentDashboardData = null;
 
-        // 🔧 API 호출 함수 (GET 방식으로 변경)
+        // 🔧 API 호출 함수 (GET)
         async function fetchDashboardData(corpCode, startYear = '2020', endYear = '2023') {
             try {
-                console.log(`대시보드 데이터 요청: ${corpCode} (${startYear}-${endYear})`);
-
-                // GET 방식 API 호출
                 const url = `${API_BASE_URL}/api/dashboard/${corpCode}?start_year=${startYear}&end_year=${endYear}`;
                 console.log(`🌐 API 호출: ${url}`);
 
@@ -564,14 +560,26 @@
                 const data = await response.json();
                 console.log('대시보드 데이터 수신:', data);
 
-                // GET API는 data.data 구조로 응답
-                return data.data;
+                // 현재 구조상 data 바로 반환
+                currentDashboardData = data;
+                return data;
 
             } catch (error) {
                 console.error('대시보드 데이터 요청 실패:', error);
                 throw error;
             }
         }
+
+        // 🔧 페이지 로드 시
+        window.addEventListener('load', function() {
+            const corpCode = new URLSearchParams(window.location.search).get('corpCode');
+            if (corpCode) {
+                displayDashboard(corpCode, '2020', '2023');
+            } else {
+                showWaitingState();
+            }
+        });
+
 
         async function sendChatMessage(message) {
             try {
