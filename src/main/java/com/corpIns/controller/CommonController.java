@@ -33,10 +33,12 @@ public class CommonController {
     }
 
     @GetMapping("/chatBotDash")
-    public String chatBotDash(@RequestParam(value = "corpCode", required = false) String corpCode, Model model) {
-        model.addAttribute("corpCode", corpCode);
-        return "common/chatBotDash";
-    } // /WEB-INF/views/common/chatBotDash.jsp
+    public String chatBotDash(
+            @RequestParam(value = "corpCode", required = false) String corpCode,
+            Model model) {
+        model.addAttribute("corpCode", corpCode); // JSP에서 ${corpCode}로 사용 가능
+        return "common/chatBotDash"; // /WEB-INF/views/common/chatBotDash.jsp
+    }
 
     @GetMapping("/compareDetail")
     public String compareDetail() {
