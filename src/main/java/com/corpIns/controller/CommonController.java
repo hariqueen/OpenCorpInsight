@@ -1,7 +1,9 @@
 package com.corpIns.controller;
 
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @Controller
 public class CommonController {
@@ -29,16 +31,16 @@ public class CommonController {
     public String compSearchPopUp() {
         return "common/modal/compSearchPopUp"; // /WEB-INF/views/common/modal/compSearchPopup.jsp
     }
+
     @GetMapping("/chatBotDash")
-    public String chatBotDash() {
-        return "common/chatBotDash"; // /WEB-INF/views/common/chatBotDash.jsp
-    }
+    public String chatBotDash(@RequestParam(value = "corpCode", required = false) String corpCode, Model model) {
+        model.addAttribute("corpCode", corpCode);
+        return "common/chatBotDash";
+    } // /WEB-INF/views/common/chatBotDash.jsp
+
     @GetMapping("/compareDetail")
     public String compareDetail() {
         return "common/compareDetail"; // /WEB-INF/views/common/compareDetail.jsp
     }
-
-
-
 
 }
