@@ -206,16 +206,19 @@ async function selectCompany(corpCode, corpName, ceoName, businessName, stockCod
         console.log('선택된 기업:', { corpCode, corpName, ceoName, businessName, stockCode, listed });
         
         // 부모 페이지에 선택된 회사 정보 전달
-        if (window.opener && window.opener.onCompanySelected) {
-            window.opener.onCompanySelected({
-                corp_code: corpCode,
-                corp_name: corpName,
-                ceo_name: ceoName,
-                business_name: businessName,
-                stock_code: stockCode,
-                is_listed: listed
-            });
-        }
+       if (window.opener && typeof window.opener.onCompanySelected === 'function') {
+           // 부모 창 함수 호출
+           window.opener.onCompanySelected({
+               corp_code: corpCode,
+               corp_name: corpName,
+               ceo_name: ceoName,
+               business_name: businessName,
+               stock_code: stockCode,
+               is_listed: listed
+           });
+       } else {
+           console.warn('부모 창 onCompanySelected 함수 없음!');
+       }
 
         alert(`회사명: ${corpName}\n대표자명: ${ceoName}\n종목명: ${businessName}\n상장여부: ${listed ? '상장' : '비상장'}`);
 

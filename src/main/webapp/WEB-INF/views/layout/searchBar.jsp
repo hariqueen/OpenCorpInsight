@@ -95,7 +95,8 @@ window.onCompanySelected = async function(company) {
         });
 
         // chatBotDash 페이지로 이동
-        window.location.href = `/chatBotDash?corpCode=${company.corp_code}`;
+        window.location.href = "/chatBotDash?corpCode=" + encodeURIComponent(company.corp_code);
+
 
     } catch(err){
         console.error(err);
