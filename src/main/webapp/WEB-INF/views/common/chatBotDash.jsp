@@ -543,15 +543,19 @@
         // 🔧 API 서버 주소만 JSON 호출용
         const API_BASE_URL = 'http://43.203.170.37:5001'; // JSON API 서버
         let currentDashboardData = null;
+        let revenueChart = null;
+        let profitChart = null;
 
         // 🔧 API 호출 함수 (GET)
         async function fetchDashboardData(corpCode, startYear='2020', endYear='2023') {
             try {
-                const url = `${API_BASE_URL}/api/dashboard`;
+                console.log(`대시보드 데이터 요청 - 기업코드: ${corpCode}, 기간: ${startYear}-${endYear}`);
+                const url = `${API_BASE_URL}/api/dashboard/${corpCode}?start_year=${startYear}&end_year=${endYear}`;
+                console.log(`요청 URL: ${url}`);
+
                 const response = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ corp_code: corpCode, start_year: startYear, end_year: endYear })
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
                 });
 
                 if (!response.ok) {
