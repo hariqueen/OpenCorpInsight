@@ -545,12 +545,14 @@
         let currentDashboardData = null;
 
         // 🔧 API 호출 함수 (GET)
-        async function fetchDashboardData(corpCode, startYear = '2020', endYear = '2023') {
+        async function fetchDashboardData(corpCode, startYear='2020', endYear='2023') {
             try {
-                const url = `${API_BASE_URL}/api/dashboard/${corpCode}?start_year=${startYear}&end_year=${endYear}`;
-                console.log(`🌐 API 호출: ${url}`);
-
-                const response = await fetch(url);
+                const url = `${API_BASE_URL}/api/dashboard`;
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ corp_code: corpCode, start_year: startYear, end_year: endYear })
+                });
 
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => ({}));
@@ -558,9 +560,6 @@
                 }
 
                 const data = await response.json();
-                console.log('대시보드 데이터 수신:', data);
-
-                // 현재 구조상 data 바로 반환
                 currentDashboardData = data;
                 return data;
 
