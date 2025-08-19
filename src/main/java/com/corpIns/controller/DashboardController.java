@@ -21,13 +21,17 @@ public class DashboardController {
             @RequestParam("start_year") int startYear,
             @RequestParam("end_year") int endYear
     ) {
-        // 👉 서비스에서 corpCode, startYear, endYear로 데이터 조회
+        // 👉 실제로는 서비스에서 DB 조회 결과를 내려야 함
         Map<String, Object> dashboardData = new HashMap<>();
         dashboardData.put("corpCode", corpCode);
         dashboardData.put("startYear", startYear);
         dashboardData.put("endYear", endYear);
-        dashboardData.put("message", "데이터 정상 조회됨!");
 
-        return ResponseEntity.ok(dashboardData);
+        // 프론트에서 data.data 구조로 꺼내니까 "data" 키 안에 감싸서 내려주는 게 맞음
+        Map<String, Object> response = new HashMap<>();
+        response.put("data", dashboardData);
+
+        return ResponseEntity.ok(response);
     }
 }
+
