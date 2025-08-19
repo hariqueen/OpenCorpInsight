@@ -444,7 +444,7 @@
 
             <div id="dashboard" style="display: none;">
                 <div class="header">
-                    <div class="ai-badge">홈으로 돌아가기</div>
+                    <div class="ai-badge" onclick="window.location.href='/'">홈으로 돌아가기</div>
                     <h1 class="company-title" id="companyName">-</h1>
                     <p class="analysis-period" id="analysisPeriod">-</p>
                 </div>
@@ -550,20 +550,19 @@
         async function fetchDashboardData(corpCode, startYear='2020', endYear='2023') {
             try {
                 console.log(`대시보드 데이터 요청 - 기업코드: ${corpCode}, 기간: ${startYear}-${endYear}`);
-                const url = `${API_BASE_URL}/api/dashboard/${corpCode}?start_year=${startYear}&end_year=${endYear}`;
+                const url = `${API_BASE_URL}/api/dashboard`;
                 console.log(`요청 URL: ${url}`);
 
-                const response = await fetch(url, {
-                    method: 'GET',
-                    headers: { 'Content-Type': 'application/json' }
-                });
+                // GET 요청으로 변경
+                const response = await fetch(`${url}/${corpCode}?start_year=${startYear}&end_year=${endYear}`);
 
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => ({}));
                     throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
                 }
 
-                const data = await response.json();
+                const responseData = await response.json();
+                const data = responseData.data;
                 currentDashboardData = data;
                 return data;
 
@@ -1062,7 +1061,7 @@
             if (newsArticles) {
                 newsArticles.innerHTML = `
                     <div class="news-item">
-                        <div class="news-title">📊 기업 데이터를 기다리는 중...</div>
+                        <div class="news-title">📊 기업 데이터를 기다리는 중…</div>
                         <div class="news-summary">
                             URL에 ?corpCode=00126380 (삼성전자) 형태로 기업코드를 추가해주세요.<br>
                             예시: /chatBotDash?corpCode=00126380
