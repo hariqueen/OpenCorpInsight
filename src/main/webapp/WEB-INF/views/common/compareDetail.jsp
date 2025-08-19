@@ -39,30 +39,6 @@
            font-size: 24px;
        }
 
-       /* AI 채팅 버튼 */
-       .ai-chat {
-           position: fixed;
-           bottom: 30px;
-           right: 30px;
-           width: 60px;
-           height: 60px;
-           background: linear-gradient(135deg, #00e0ff, #0066cc);
-           border-radius: 50%;
-           display: flex;
-           align-items: center;
-           justify-content: center;
-           font-weight: bold;
-           font-size: 18px;
-           cursor: pointer;
-           box-shadow: 0 6px 20px rgba(0, 224, 255, 0.5);
-           transition: transform 0.2s, box-shadow 0.2s;
-       }
-
-       .ai-chat:hover {
-           transform: scale(1.15);
-           box-shadow: 0 8px 30px rgba(0, 224, 255, 0.7);
-       }
-
        /* 메인 컨테이너 */
        .main-container {
            max-width: 1200px;
@@ -426,10 +402,7 @@
         </button>
     </div>
 
-    <div class="ai-chat" onclick="openAIChat()">
-        AI
-    </div>
-
+<%@ include file="/WEB-INF/views/layout/floating.jsp" %>
     <script>
         // 샘플 데이터 (실제로는 API에서 받아옴)
         const comparisonData = {
@@ -585,10 +558,6 @@
 
         function openDetailAnalysis() {
             window.location.href = '/compare';
-        }
-
-        function openAIChat() {
-            alert('AI 채팅을 시작합니다.');
         }
 
         // 페이지 로드 시 데이터 업데이트

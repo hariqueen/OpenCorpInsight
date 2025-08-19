@@ -41,11 +41,6 @@ public class LoginController {
         return "login/setProfile"; // /WEB-INF/views/login/setProfile.jsp
     }
 
-    @GetMapping("/joinAction")
-    public String joinAction() {
-        return "login/joinAction"; // /WEB-INF/views/login/joinAction.jsp
-    }
-
     @PostMapping("/joinAction")
     @ResponseBody
     public Map<String, Object> joinAction(
@@ -56,6 +51,12 @@ public class LoginController {
         Map<String, Object> result = new HashMap<>();
 
         try {
+            // 이메일 중복 체크
+            User existing = userService.findByEmail(email);
+            if (existing != null) {
+                throw new IllegalArgumentException("사용중인 이메일입니다");
+            }
+
             if (password == null || password.isEmpty()) {
                 throw new IllegalArgumentException("비밀번호를 입력하세요.");
             }
@@ -79,6 +80,18 @@ public class LoginController {
             result.put("status", "fail");
             result.put("message", e.getMessage());
         }
+        return result;
+    }
+
+    @GetMapping("/checkEmail")
+    @ResponseBody
+    public Map<String, Object> checkEmail(@RequestParam String email) {
+        Map<String, Object> result = new HashMap<>();
+        User existing = userService.findByEmail(email);
+        boolean available = (existing == null);
+        result.put("status", "success");
+        result.put("available", available);
+        result.put("message", available ? "사용 가능한 이메일입니다" : "사용중인 이메일입니다");
         return result;
     }
 

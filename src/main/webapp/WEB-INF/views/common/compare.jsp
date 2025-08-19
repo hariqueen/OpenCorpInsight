@@ -17,34 +17,61 @@
             padding: 20px;
         }
 
-        .title {
+        /* 중앙 정렬 컨테이너 */
+        .main-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             text-align: center;
-            margin: 30px 0 20px;
-            font-size: 18px;
         }
 
+        /* 타이틀 크기 키우기 */
+        .title {
+            font-size: 32px; /* 기존 18px → 32px */
+            font-weight: 700;
+            margin-bottom: 40px;
+            line-height: 1.3;
+        }
+
+        /* VS 버튼 영역 크기 키우기 */
         .vs-select {
             display: flex;
             justify-content: center;
-            gap: 40px;
-            margin-bottom: 20px;
+            align-items: center;
+            gap: 60px;
         }
 
         .vs-button {
-            background-color: white;
-            color: black;
-            padding: 20px;
-            width: 50px;
-            border-radius: 20%;
-            font-size: 24px;
+            background-color: #ffffff;
+            color: #161e63;
+            min-width: 220px;   /* 가로 길이 확보 */
+            height: 90px;       /* 높이 고정 */
+            border-radius: 20px;
+            font-size: 28px;
+            font-weight: bold;
             cursor: pointer;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+            transition: all 0.2s ease-in-out;
+
+            display: flex;              /* flex 사용 */
+            justify-content: center;    /* 가로 가운데 */
+            align-items: center;        /* 세로 가운데 */
             text-align: center;
         }
 
-        .vs-text {
-            font-size: 32px;
-            font-weight: bold;
+        .vs-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.5);
         }
+
+        /* VS 텍스트 크기 키우기 */
+        .vs-text {
+            font-size: 48px;
+            font-weight: 800;
+            color: #ffffff;
+        }
+
 
     </style>
 </head>
@@ -54,15 +81,16 @@
 <div class="container">
 <%@ include file="/WEB-INF/views/layout/searchBar.jsp" %>
 
-    <!-- 메인 타이틀 -->
-    <div class="title">업계의 왕좌는 누구? <br>매치업을 만들어보세요!</div>
+<div class="main-center">
+    <div class="title">업계의 왕좌는 누구?<br>매치업을 만들어보세요!</div>
 
-    <!-- 기업 선택 버튼 -->
     <div class="vs-select">
         <div class="vs-button">+</div>
         <div class="vs-text">VS</div>
         <div class="vs-button">+</div>
     </div>
+</div>
+
 
 <%@ include file="/WEB-INF/views/layout/floating.jsp" %>
 </div>
