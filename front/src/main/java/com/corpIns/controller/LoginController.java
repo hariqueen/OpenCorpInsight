@@ -129,9 +129,8 @@ public class LoginController {
     @ResponseBody
     public Map<String, Object> getMockUsers() {
         Map<String, Object> result = new HashMap<>();
-        userService.printMockUsers();
         result.put("status", "success");
-        result.put("message", "콘솔에서 Mock 사용자 목록을 확인하세요");
+        result.put("message", "Mock 사용자 기능이 제거되었습니다. 실제 DB 사용자를 사용하세요.");
         return result;
     }
 }
