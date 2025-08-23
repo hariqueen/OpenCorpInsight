@@ -1,6 +1,7 @@
 package com.corpIns.dto;
 
 public class User {
+    private int userSno;
     private String email;
     private String passwordHash;
     
@@ -16,5 +17,12 @@ public class User {
     }
     public void setPasswordHash(String passwordHash) {
         this.passwordHash = passwordHash;
+    }
+    
+    public int getUserSno() {
+        return userSno;
+    }
+    public void setUserSno(int userSno) {
+        this.userSno = userSno;
     }
 }
