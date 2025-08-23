@@ -625,10 +625,10 @@
             try {
                 console.log('실제 기업 데이터를 가져오는 중...');
                 
-                // 두 기업의 대시보드 데이터를 가져오기 (로컬 Flask 백엔드)
+                // 두 기업의 대시보드 데이터를 가져오기 (EC2 Flask 백엔드)
                 const [company1Data, company2Data] = await Promise.all([
-                    fetch(`http://localhost:5001/api/dashboard/${selectedCompanies.company1.corp_code}?start_year=2020&end_year=2023`),
-                    fetch(`http://localhost:5001/api/dashboard/${selectedCompanies.company2.corp_code}?start_year=2020&end_year=2023`)
+                    fetch(`http://43.203.170.37:5001/api/dashboard/${selectedCompanies.company1.corp_code}?start_year=2020&end_year=2023`),
+                    fetch(`http://43.203.170.37:5001/api/dashboard/${selectedCompanies.company2.corp_code}?start_year=2020&end_year=2023`)
                 ]);
 
                 if (!company1Data.ok || !company2Data.ok) {

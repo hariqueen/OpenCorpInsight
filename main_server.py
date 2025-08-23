@@ -43,7 +43,7 @@ else:
 
 # Flask 앱 초기화
 app = Flask(__name__)
-CORS(app, origins=["http://localhost:8080", "http://localhost:8081", "http://127.0.0.1:8080", "http://127.0.0.1:8081"])
+CORS(app, origins=["http://localhost:8080", "http://127.0.0.1:8080", "http://43.203.170.37:8080"])
 
 # --- MCP 코어 연동 초기화 ---
 try:
@@ -65,9 +65,8 @@ except Exception as _mcp_init_err:
     print(f"❌ MCP 서비스 초기화 실패: {_mcp_init_err}")
     _MCP_SVC = None
 
-# DB API 서버 설정 (로컬 테스트용으로 비활성화)
-DB_API_BASE_URL = None  # 로컬 테스트에서는 DB 저장 비활성화
-# DB_API_BASE_URL = "http://43.203.170.37:8080"  # 실제 서버 주소 (필요시 주석 해제)
+# DB API 서버 설정 (로컬 DB API 서버)
+DB_API_BASE_URL = "http://localhost:5002"  # 로컬 DB API 서버 주소
 
 # 로깅 설정
 logging.basicConfig(level=logging.INFO)

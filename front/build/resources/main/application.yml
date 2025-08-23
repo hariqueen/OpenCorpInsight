@@ -8,7 +8,7 @@ spring:
       suffix: .jsp
   
   datasource:
-    url: jdbc:sqlite:chatbot.db
+    url: jdbc:sqlite:../DB/chatbot.db
     driver-class-name: org.sqlite.JDBC
   
   jpa:

@@ -373,7 +373,7 @@
 </div>
 
 <script>
-    const API_BASE_URL = 'http://localhost:5001';
+    const API_BASE_URL = 'http://43.203.170.37:5001';
     const chatMessages = document.getElementById('chatMessages');
     const chatInput = document.getElementById('chatInput');
     const sendButton = document.getElementById('sendButton');

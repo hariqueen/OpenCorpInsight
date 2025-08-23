@@ -622,18 +622,13 @@
 
         .spinner {
             border: 2px solid rgba(255, 255, 255, 0.3);
-            border-top: 2px sol
-        /* 입력창 */
-        .chat-input-container { display: flex; justify-content: center; padding: 15px 0; }
-        .chat-input { width: 100%; max-width: 600px; padding: 12px 18px; border-radius: 30px; border: 2px solid #00ffcc; background: #1c1f4a; color: white; outline: none; font-size: 16px; transition: all 0.3s ease; }
-        .chat-input:focus { border-color: #00ffff; box-shadow: 0 0 15px #00ffff; }
-        .send-button {
-            margin-left: 10px; padding: 12px; border-radius: 50%; border: none;
-            background: linear-gradient(90deg, #00ffff, #0077ff); color: #161e63;
-            cursor: pointer; box-shadow: 0 0 10px rgba(0,255,255,0.5);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            border-top: 2px solid #00ffff;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
         }
-        .send-button:hover { transform: scale(1.1); box-shadow: 0 0 20px rgba(0,255,255,0.8); }
 
         /* 로딩 / 에러 */
         .loading { text-align: center; padding: 40px; }
@@ -796,7 +791,7 @@
 
     <script>
         // 🔧 Flask 서버 연동 설정
-        const API_BASE_URL = 'http://localhost:5001'; // 로컬 Flask 백엔드
+        const API_BASE_URL = 'http://43.203.170.37:5001'; // EC2 Flask 백엔드
         let currentDashboardData = null; // 현재 대시보드 데이터
         let revenueChart = null;
         let profitChart = null;
@@ -2021,7 +2016,7 @@
             if (homeButton) {
                 homeButton.addEventListener('click', function() {
                     console.log('🏠 홈으로 돌아가기 클릭됨');
-                    window.location.href = 'http://localhost:8081/';
+                    window.location.href = 'http://43.203.170.37:8080/';
                 });
             }
         });
