@@ -1,4 +1,16 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page import="com.corpIns.dto.User" %>
+<%
+    // 로그인한 사용자 정보 가져오기
+    User loginUser = (User) session.getAttribute("loginUser");
+    int userSno = 1; // 기본값
+    String userNickname = "웹사용자"; // 기본값
+    
+    if (loginUser != null) {
+        userSno = loginUser.getUserSno();
+        userNickname = loginUser.getEmail(); // 또는 별도 닉네임 필드가 있다면 사용
+    }
+%>
 <html>
 <head>
     <title>AI 챗봇 - OpenCorpInsight</title>
@@ -372,8 +384,14 @@
     </div>
 </div>
 
-<script>
-    const API_BASE_URL = 'http://43.203.170.37:5001';
+    <script>
+        // JSP에서 JavaScript 변수로 전달 (안전한 방법)
+        var userSnoValue = parseInt('<%= userSno %>');
+        var userNicknameValue = '<%= userNickname != null ? userNickname : "웹사용자" %>';
+        
+        const API_BASE_URL = 'http://43.203.170.37:5001';
+        const USER_SNO = userSnoValue;
+        const USER_NICKNAME = userNicknameValue;
     const chatMessages = document.getElementById('chatMessages');
     const chatInput = document.getElementById('chatInput');
     const sendButton = document.getElementById('sendButton');
@@ -607,8 +625,8 @@
             console.log('🔍 요청 URL:', fullUrl);
             
             const requestData = {
-                user_sno: 'web_user',
-                nickname: '웹사용자',
+                user_sno: USER_SNO,
+                nickname: USER_NICKNAME,
                 difficulty: 'intermediate',
                 interest: '기술주',
                 purpose: '투자분석',

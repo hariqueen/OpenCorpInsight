@@ -1,5 +1,17 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page isELIgnored="true" %>
+<%@ page import="com.corpIns.dto.User" %>
+<%
+    // 로그인한 사용자 정보 가져오기
+    User loginUser = (User) session.getAttribute("loginUser");
+    int userSno = 1; // 기본값
+    String userNickname = "웹사용자"; // 기본값
+    
+    if (loginUser != null) {
+        userSno = loginUser.getUserSno();
+        userNickname = loginUser.getEmail(); // 또는 별도 닉네임 필드가 있다면 사용
+    }
+%>
 <html>
 <head>
     <meta charset="UTF-8">
@@ -790,8 +802,14 @@
     </div>
 
     <script>
+        // JSP에서 JavaScript 변수로 전달 (안전한 방법)
+        var userSnoValue = parseInt('<%= userSno %>');
+        var userNicknameValue = '<%= userNickname != null ? userNickname : "웹사용자" %>';
+        
         // 🔧 Flask 서버 연동 설정
         const API_BASE_URL = 'http://43.203.170.37:5001'; // EC2 Flask 백엔드
+        const USER_SNO = userSnoValue;
+        const USER_NICKNAME = userNicknameValue;
         let currentDashboardData = null; // 현재 대시보드 데이터
         let revenueChart = null;
         let profitChart = null;
@@ -807,8 +825,8 @@
                     corp_code: corpCode,
                     bgn_de: startYear,
                     end_de: endYear,
-                    user_sno: 'web_user',
-                    nickname: '웹사용자',
+                    user_sno: USER_SNO,
+                    nickname: USER_NICKNAME,
                     difficulty: 'intermediate',
                     interest: '기술주',
                     purpose: '투자분석'
@@ -909,8 +927,8 @@
         async function sendChatMessage(message) {
             try {
                 const requestData = {
-                    user_sno: 'web_user',
-                    nickname: '웹사용자',
+                    user_sno: USER_SNO,
+                    nickname: USER_NICKNAME,
                     difficulty: 'intermediate',
                     interest: '기술주',
                     purpose: '투자분석',
