@@ -123,10 +123,8 @@
 
 <div style="position: fixed; top: 20px; right: 80px; color: white; font-weight: bold; z-index: 1001;">
     <c:if test="${not empty sessionScope.loginUser}">
-        <!-- ${sessionScope.loginUser.email} 님 -->
-         
+        ${sessionScope.loginUser.email} 님
     </c:if>
-    test1234@test.com 님
 </div>
 
 <!-- 프로필 동그란 버튼 -->

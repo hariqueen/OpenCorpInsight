@@ -95,25 +95,7 @@
             }
         }
 
-        .test-info {
-            background: rgba(0, 255, 255, 0.1);
-            border: 1px solid #00ffff;
-            border-radius: 10px;
-            padding: 15px;
-            margin-top: 20px;
-            font-size: 12px;
-            color: #00ffff;
-        }
 
-        .test-info h4 {
-            margin: 0 0 10px 0;
-            color: #00ffff;
-        }
-
-        .test-info p {
-            margin: 5px 0;
-            color: rgba(255, 255, 255, 0.8);
-        }
     </style>
 </head>
 <body>
@@ -123,11 +105,7 @@
     <input type="password" name="password" placeholder="비밀번호를 입력하세요" required>
     <button type="submit" class="login-btn">LOGIN</button>
     
-    <div class="test-info">
-        <h4>🧪 테스트 계정</h4>
-        <p>📧 test@test.com / 1234</p>
-        <p>📧 admin@admin.com / admin</p>
-    </div>
+
 </form>
 <script>
   $('#loginForm').on('submit', function(e) {
