@@ -461,7 +461,7 @@ def search_news_perplexity(company_name: str, period: str = '3days') -> List[Dic
         
         # API 요청
         print(f"📡 Perplexity API 요청 전송...")
-        response = requests.post(url, headers=headers, json=data, timeout=30)
+        response = requests.post(url, headers=headers, json=data, timeout=60)
         print(f"📡 Perplexity API 응답 상태: {response.status_code}")
         print(f"📡 Perplexity API 응답 길이: {len(response.text)}")
         print(f"📡 Perplexity API 응답 내용 (처음 500자): {response.text[:500]}")
