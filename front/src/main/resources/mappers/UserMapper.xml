@@ -5,7 +5,7 @@
 
 <mapper namespace="com.corpIns.mapper.UserMapper">
     <select id="selectUserByEmail" parameterType="string" resultType="com.corpIns.dto.User">
-        SELECT user_sno as userSno, email, password_hash as passwordHash
+        SELECT user_sno as userSno, email, name, password_hash as passwordHash
         FROM users
         WHERE email = #{email}
     </select>

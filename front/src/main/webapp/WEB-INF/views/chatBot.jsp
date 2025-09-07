@@ -11,7 +11,7 @@
     }
     
     int userSno = loginUser.getUserSno();
-    String userNickname = loginUser.getEmail(); // 또는 별도 닉네임 필드가 있다면 사용
+    String userNickname = loginUser.getName() != null ? loginUser.getName() : loginUser.getEmail();
 %>
 <html>
 <head>

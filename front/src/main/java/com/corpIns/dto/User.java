@@ -3,6 +3,7 @@ package com.corpIns.dto;
 public class User {
     private int userSno;
     private String email;
+    private String name;
     private String passwordHash;
     
     // Getter / Setter
@@ -24,5 +25,12 @@ public class User {
     }
     public void setUserSno(int userSno) {
         this.userSno = userSno;
+    }
+    
+    public String getName() {
+        return name;
+    }
+    public void setName(String name) {
+        this.name = name;
     }
 }

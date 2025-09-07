@@ -123,7 +123,14 @@
 
 <div style="position: fixed; top: 20px; right: 80px; color: white; font-weight: bold; z-index: 1001;">
     <c:if test="${not empty sessionScope.loginUser}">
-        ${sessionScope.loginUser.email} 님
+        <c:choose>
+            <c:when test="${not empty sessionScope.loginUser.name}">
+                ${sessionScope.loginUser.name} 님
+            </c:when>
+            <c:otherwise>
+                ${sessionScope.loginUser.email} 님
+            </c:otherwise>
+        </c:choose>
     </c:if>
 </div>
 
