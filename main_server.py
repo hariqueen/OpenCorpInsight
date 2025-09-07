@@ -848,9 +848,12 @@ async def generate_dashboard_data_optimized(corp_code: str, bgn_de: str, end_de:
         asyncio.gather(*financial_tasks)
     )
     
-    # 3. 뉴스 조회 (기업명을 얻은 후)
-    print(f"🔍 뉴스 API 호출: {corp_name}")
-    news_articles = await get_news_optimized(corp_name, "3days")
+    # 3. 뉴스 조회 (비동기 백그라운드 처리)
+    print(f"🔍 뉴스 API 호출: {corp_name} (백그라운드 처리)")
+    news_task = asyncio.create_task(get_news_optimized(corp_name, "3days"))
+    
+    # 뉴스는 백그라운드에서 처리하고, 대시보드는 먼저 반환
+    news_articles = []  # 빈 뉴스로 먼저 반환
     
     # 데이터 처리
     years_sorted = [str(year) for year in years]
