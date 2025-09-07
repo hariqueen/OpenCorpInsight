@@ -1357,8 +1357,8 @@
             }
         }
 
-        // 🔧 비동기 뉴스 로딩 (재시도 로직 포함)
-        async function loadNewsAsync(corpName, maxRetries = 3) {
+        // 🔧 비동기 뉴스 로딩 (3번 재시도 + 자동 새로고침)
+        async function loadNewsAsync(corpName, maxRetries = 3, allowRefresh = true) {
             let lastError = null;
             
             for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -1399,11 +1399,24 @@
                 }
             }
             
-            // 모든 시도 실패
-            console.error(`뉴스 로딩 최종 실패 (${maxRetries}번 시도):`, lastError);
-            hideNewsLoading();
-            document.getElementById('newsArticles').innerHTML = 
-                `<div class="news-item">뉴스 로딩 실패 (${maxRetries}번 재시도 후 포기)</div>`;
+            // 3번 재시도 후 실패 - 자동 새로고침 시도
+            if (allowRefresh) {
+                console.log(`🔄 3번 재시도 실패 - 자동 새로고침 시도`);
+                document.getElementById('newsArticles').innerHTML = 
+                    '<div class="news-item">뉴스 조회 실패 - 자동 새로고침 중...</div>';
+                
+                // 2초 후 새로고침
+                setTimeout(() => {
+                    console.log(`🔄 자동 새로고침 실행`);
+                    loadNewsAsync(corpName, 3, false); // 새로고침 후에는 allowRefresh=false
+                }, 2000);
+            } else {
+                // 새로고침 후에도 실패
+                console.error(`뉴스 로딩 최종 실패 (새로고침 후에도 실패):`, lastError);
+                hideNewsLoading();
+                document.getElementById('newsArticles').innerHTML = 
+                    '<div class="news-item">뉴스를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.</div>';
+            }
         }
 
         // 🌟 외부에서 호출할 수 있는 메인 함수

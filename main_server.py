@@ -996,7 +996,7 @@ def get_company_news(company_name):
     try:
         period = request.args.get('period', '3days')
         limit = min(int(request.args.get('limit', 5)), 5)
-        news_articles = search_news_gemini(company_name, period, max_retries=3)
+        news_articles = search_news_gemini(company_name, period, max_retries=6)
         
         return jsonify({
             'status': 'success',
@@ -2160,7 +2160,7 @@ def get_company_news_detailed(company_name):
         period = request.args.get('period', '3days')
         limit = min(int(request.args.get('limit', 5)), 5)  # 기본 5개, 최대 5개로 제한
         
-        news_articles = search_news_gemini(company_name, period, max_retries=3)
+        news_articles = search_news_gemini(company_name, period, max_retries=6)
         
         return jsonify({
             'status': 'success',
