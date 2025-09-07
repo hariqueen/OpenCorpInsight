@@ -451,12 +451,12 @@ def search_news_gemini(company_name: str, period: str = '3days') -> List[Dict]:
                     clean_content = clean_content[:-3]  # ``` 제거
                 clean_content = clean_content.strip()
                 
-                # 추가 정리: 불완전한 JSON 수정 시도
-                if not clean_content.endswith('}'):
-                    # JSON이 불완전하면 마지막 완전한 객체까지만 파싱
-                    last_complete = clean_content.rfind('    }')
-                    if last_complete > 0:
-                        clean_content = clean_content[:last_complete + 5] + '\n  ]\n}'
+                # Gemini 특화: 첫 번째 { 부터 마지막 } 까지만 추출 (추가 텍스트 제거)
+                first_brace = clean_content.find('{')
+                last_brace = clean_content.rfind('}')
+                
+                if first_brace != -1 and last_brace != -1:
+                    clean_content = clean_content[first_brace:last_brace + 1]
                 
                 # JSON 파싱
                 news_data = json.loads(clean_content)
