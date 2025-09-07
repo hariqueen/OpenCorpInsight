@@ -887,8 +887,10 @@
             ? 'http://localhost:5001' 
             : 'http://43.203.170.37:5001'; // 환경에 따라 자동 선택
             
-        // 🔧 DB 서버 연동 설정 (메인 서버와 통합)
-        const DB_BASE_URL = API_BASE_URL; // 메인 서버(5001)에 DB API 통합
+        // 🔧 DB 서버 연동 설정 (별도 DB 서버)
+        const DB_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+            ? 'http://localhost:5002' 
+            : 'http://43.203.170.37:5002'; // DB 전용 서버
         const USER_SNO = userSnoValue;
         const USER_NICKNAME = userNicknameValue;
         let currentDashboardData = null; // 현재 대시보드 데이터
@@ -1068,7 +1070,7 @@
                     requestData.company_data = currentDashboardData;
                 }
 
-                const response = await fetch(`${API_BASE_URL}/api/chat`, {
+                const response = await fetch(`${DB_BASE_URL}/api/chat`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
