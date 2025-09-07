@@ -365,8 +365,8 @@ def get_financial_data(corp_code: str, year: str = '2023') -> Dict:
         logger.error(f"재무 데이터 조회 오류: {e}")
         raise
 
-def search_news_gemini(company_name: str, period: str = '3days') -> List[Dict]:
-    """Gemini API를 통해 뉴스 검색 및 요약 (더 빠른 성능)"""
+def search_news_gemini(company_name: str, period: str = '3days', max_retries: int = 3) -> List[Dict]:
+    """Gemini API를 통해 뉴스 검색 및 요약 (재시도 로직 포함)"""
     print(f"🔍 뉴스 검색 시작: {company_name} ({period})")
     print(f"   - GEMINI_API_KEY: {'설정됨' if GEMINI_API_KEY else 'None'} ({GEMINI_API_KEY[:20] if GEMINI_API_KEY else 'N/A'}...)")
     
@@ -400,6 +400,25 @@ def search_news_gemini(company_name: str, period: str = '3days') -> List[Dict]:
             }
         ]
     
+    # 재시도 로직
+    for attempt in range(max_retries):
+        if attempt > 0:
+            print(f"뉴스 조회 재시도 {attempt + 1}/{max_retries}: {company_name}")
+            time.sleep(1)  # 재시도 간격
+        
+        result = _search_news_gemini_single_attempt(company_name, period)
+        if result:  # 성공적으로 뉴스를 가져온 경우
+            print(f"뉴스 검색 성공 (시도 {attempt + 1}/{max_retries}): {len(result)}개 기사")
+            return result
+        
+        if attempt < max_retries - 1:
+            print(f"뉴스 조회 실패 (시도 {attempt + 1}/{max_retries}) - 재시도합니다...")
+    
+    print(f"뉴스 검색 최종 실패 - {max_retries}번 시도 후 포기")
+    return []
+
+def _search_news_gemini_single_attempt(company_name: str, period: str = '3days') -> List[Dict]:
+    """Gemini API를 통해 뉴스 검색 - 단일 시도"""
     try:
         period_map = {'day': '지난 24시간', '3days': '지난 3일', 'week': '지난 7일', 'month': '지난 30일'}
         period_text = period_map.get(period, '지난 3일')
@@ -977,7 +996,7 @@ def get_company_news(company_name):
     try:
         period = request.args.get('period', '3days')
         limit = min(int(request.args.get('limit', 5)), 5)
-        news_articles = search_news_gemini(company_name, period)
+        news_articles = search_news_gemini(company_name, period, max_retries=3)
         
         return jsonify({
             'status': 'success',
@@ -2080,8 +2099,8 @@ def get_dashboard_news():
         
         print(f"🔍 대시보드 뉴스 조회 시작: {corp_name} ({period})")
         
-        # 뉴스 조회
-        news_articles = search_news_gemini(corp_name, period)
+        # 뉴스 조회 (재시도 로직 포함)
+        news_articles = search_news_gemini(corp_name, period, max_retries=3)
         
         # 대시보드 형식에 맞게 변환
         news_data = {
@@ -2108,7 +2127,7 @@ def get_dashboard_news():
                 'negative_news': len([a for a in news_articles if any(word in a.get('content', '').lower() for word in ['감소', '하락', '부진', '악화'])]) if news_articles else 0
             } if len(news_articles) > 0 else {'positive_news': 0, 'neutral_news': 0, 'negative_news': 0},
             'message': '최신 뉴스를 성공적으로 가져왔습니다.' if len(news_articles) > 0 else (
-                f'{corp_name}에 대한 최근 뉴스를 찾을 수 없습니다. 뉴스 검색 API에 일시적인 문제가 있을 수 있습니다.'
+                f'{corp_name}에 대한 최근 뉴스를 찾을 수 없습니다. 재시도 후에도 뉴스 조회에 실패했습니다.'
             )
         }
         
@@ -2141,7 +2160,7 @@ def get_company_news_detailed(company_name):
         period = request.args.get('period', '3days')
         limit = min(int(request.args.get('limit', 5)), 5)  # 기본 5개, 최대 5개로 제한
         
-        news_articles = search_news_gemini(company_name, period)
+        news_articles = search_news_gemini(company_name, period, max_retries=3)
         
         return jsonify({
             'status': 'success',

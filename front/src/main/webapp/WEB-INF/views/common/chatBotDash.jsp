@@ -1248,6 +1248,17 @@
             document.getElementById('newsStats').style.display = 'flex';
         }
 
+        function updateNewsLoadingMessage(message) {
+            const loadingElement = document.getElementById('newsLoading');
+            if (loadingElement) {
+                const messageElement = loadingElement.querySelector('p') || loadingElement.querySelector('div');
+                if (messageElement) {
+                    messageElement.textContent = message;
+                }
+                loadingElement.style.display = 'flex';
+            }
+        }
+
         function renderNewsData(newsData) {
             try {
                 hideNewsLoading();
@@ -1290,20 +1301,54 @@
             }
         }
 
-        // 🔧 비동기 뉴스 로딩 (대시보드 로딩 후 별도 실행)
-        async function loadNewsAsync(corpName) {
-            try {
-                console.log(`🔄 비동기 뉴스 로딩 시작: ${corpName}`);
-                showNewsLoading();
-                
-                const newsData = await fetchNewsData(corpName);
-                renderNewsData(newsData);
-                
-            } catch (error) {
-                console.error('비동기 뉴스 로딩 실패:', error);
-                hideNewsLoading();
-                document.getElementById('newsArticles').innerHTML = '<div class="news-item">뉴스 로딩 실패</div>';
+        // 🔧 비동기 뉴스 로딩 (재시도 로직 포함)
+        async function loadNewsAsync(corpName, maxRetries = 3) {
+            let lastError = null;
+            
+            for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                try {
+                    console.log(`🔄 뉴스 로딩 시도 ${attempt}/${maxRetries}: ${corpName}`);
+                    
+                    // 재시도 시 메시지 업데이트
+                    if (attempt > 1) {
+                        updateNewsLoadingMessage(`뉴스 조회 중... (${attempt}/${maxRetries}번째 시도)`);
+                        // 재시도 간격
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    } else {
+                        showNewsLoading();
+                    }
+                    
+                    const newsData = await fetchNewsData(corpName);
+                    
+                    // 뉴스가 없는 경우 재시도
+                    if (!newsData.has_news && attempt < maxRetries) {
+                        console.log(`⚠️ 뉴스 없음 - 재시도 ${attempt + 1}/${maxRetries}`);
+                        lastError = new Error('뉴스를 찾을 수 없음');
+                        continue;
+                    }
+                    
+                    // 성공
+                    renderNewsData(newsData);
+                    if (attempt > 1) {
+                        console.log(`✅ 뉴스 로딩 성공 (${attempt}번째 시도)`);
+                    }
+                    return;
+                    
+                } catch (error) {
+                    console.error(`뉴스 로딩 시도 ${attempt} 실패:`, error);
+                    lastError = error;
+                    
+                    if (attempt === maxRetries) {
+                        break;
+                    }
+                }
             }
+            
+            // 모든 시도 실패
+            console.error(`뉴스 로딩 최종 실패 (${maxRetries}번 시도):`, lastError);
+            hideNewsLoading();
+            document.getElementById('newsArticles').innerHTML = 
+                `<div class="news-item">뉴스 로딩 실패 (${maxRetries}번 재시도 후 포기)</div>`;
         }
 
         // 🌟 외부에서 호출할 수 있는 메인 함수
