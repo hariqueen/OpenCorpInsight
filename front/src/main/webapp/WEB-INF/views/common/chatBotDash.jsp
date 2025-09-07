@@ -893,6 +893,10 @@
             : 'http://43.203.170.37:5002'; // DB 전용 서버
         const USER_SNO = userSnoValue;
         const USER_NICKNAME = userNicknameValue;
+        
+        // 🆔 세션 ID 생성 (새로운 기업 검색 시마다 새 채팅 세션)
+        const SESSION_ID = Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        console.log('🆔 새 채팅 세션 시작:', SESSION_ID);
         let currentDashboardData = null; // 현재 대시보드 데이터
         let revenueChart = null;
         let profitChart = null;
@@ -2450,8 +2454,18 @@
                 });
             }
             
-            // 대화 이력 불러오기
-            loadChatHistory();
+            // 🔄 새로고침 vs 새 검색 구분
+            // sessionStorage는 탭이 닫히면 사라지므로, 같은 탭에서의 새로고침만 감지
+            const sessionKey = 'chatLoaded_' + window.location.href;
+            const isReload = sessionStorage.getItem(sessionKey) === 'true';
+            
+            if (isReload) {
+                console.log('🔄 새로고침 감지 - 대화 이력 복원');
+                loadChatHistory();
+            } else {
+                console.log('🆕 새 기업 검색 - 깨끗한 채팅 시작');
+                sessionStorage.setItem(sessionKey, 'true');
+            }
         });
 
         const currentCorpCode = getCorpCodeFromURL();
