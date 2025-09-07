@@ -206,14 +206,28 @@
             color: rgba(255, 255, 255, 0.8);
             font-size: 0.9em;
         }
+        
+        .news-loading span {
+            transform: none !important;
+            animation: none !important;
+            position: static !important;
+        }
 
         .spinner-small {
             width: 20px;
             height: 20px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-top: 2px solid #00d4ff;
+            display: inline-block;
+            position: relative;
+        }
+        
+        .spinner-small::before {
+            content: '';
+            display: block;
+            width: 16px;
+            height: 16px;
             border-radius: 50%;
-            animation: spin 1s linear infinite;
+            background: linear-gradient(45deg, #00d4ff, rgba(0, 212, 255, 0.3));
+            animation: pulse 1.5s ease-in-out infinite;
         }
 
         .news-stats {
@@ -652,19 +666,56 @@
         }
 
         .spinner {
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-top: 2px solid #00ffff;
-            border-radius: 50%;
             width: 30px;
             height: 30px;
-            animation: spin 1s linear infinite;
             margin: 0 auto 15px;
+            display: inline-block;
+            position: relative;
+        }
+        
+        .spinner::before {
+            content: '';
+            display: block;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #00ffff, rgba(0, 255, 255, 0.3));
+            animation: pulse 1.5s ease-in-out infinite;
         }
 
         /* 로딩 / 에러 */
         .loading { text-align: center; padding: 40px; }
-        .spinner { border: 2px solid rgba(255,255,255,0.3); border-top: 2px solid #00ffff; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto 15px; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        /* 부드러운 펄스 애니메이션 */
+        @keyframes pulse {
+            0% { 
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% { 
+                opacity: 0.6;
+                transform: scale(1.1);
+            }
+            100% { 
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        /* 점 점 점 애니메이션 */
+        .loading-dots {
+            font-size: 12px;
+            animation: blink 1.4s infinite both;
+        }
+        
+        @keyframes blink {
+            0%, 80%, 100% { 
+                opacity: 0; 
+            }
+            40% { 
+                opacity: 1; 
+            }
+        }
         .error-message { background: rgba(255,0,128,0.2); border: 1px solid rgba(255,0,128,0.5); border-radius: 8px; padding: 10px; margin: 10px 0; text-align: center; color: #ff00ff; }
 
         /* 반응형 */
@@ -1251,9 +1302,14 @@
         function updateNewsLoadingMessage(message) {
             const loadingElement = document.getElementById('newsLoading');
             if (loadingElement) {
-                const messageElement = loadingElement.querySelector('p') || loadingElement.querySelector('div');
+                const messageElement = loadingElement.querySelector('span');
                 if (messageElement) {
                     messageElement.textContent = message;
+                } else {
+                    // span이 없으면 새로 생성
+                    const newSpan = document.createElement('span');
+                    newSpan.textContent = message;
+                    loadingElement.appendChild(newSpan);
                 }
                 loadingElement.style.display = 'flex';
             }
@@ -1309,9 +1365,8 @@
                 try {
                     console.log(`🔄 뉴스 로딩 시도 ${attempt}/${maxRetries}: ${corpName}`);
                     
-                    // 재시도 시 메시지 업데이트
+                    // 재시도 시에도 동일한 메시지 유지
                     if (attempt > 1) {
-                        updateNewsLoadingMessage(`뉴스 조회 중... (${attempt}/${maxRetries}번째 시도)`);
                         // 재시도 간격
                         await new Promise(resolve => setTimeout(resolve, 1000));
                     } else {
@@ -1637,7 +1692,7 @@
 
             // 전송 버튼 비활성화 및 로딩 표시
             sendButton.disabled = true;
-            sendButton.innerHTML = '<div class="spinner" style="width: 16px; height: 16px;"></div>';
+            sendButton.innerHTML = '<div class="loading-dots">●●●</div>';
 
             // 로딩 메시지
             const loadingMessageId = 'loading-' + Date.now();
