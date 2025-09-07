@@ -118,7 +118,14 @@
 
         <div class="form-group">
             <label class="form-label" for="nickname">닉네임</label>
-            <input type="text" id="nickname" name="nickname" value="<%= loginUser.getNickname() != null ? loginUser.getNickname() : "" %>">
+            <input type="text" id="nickname" name="nickname" value="<%
+                try {
+                    String nickname = loginUser.getNickname();
+                    out.print(nickname != null ? nickname : "");
+                } catch (Exception e) {
+                    out.print("");
+                }
+            %>">
         </div>
 
         <div class="form-group">
