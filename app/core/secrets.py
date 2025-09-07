@@ -2,14 +2,15 @@ import os
 import json
 import boto3
 from botocore.exceptions import ClientError
+from typing import Optional, Dict
 
 class Secrets:
-    def __init__(self, region: str | None = None):
+    def __init__(self, region: Optional[str] = None):
         self._region = region or os.getenv("AWS_REGION", "ap-northeast-2")
         self._boto = boto3.session.Session().client("secretsmanager", region_name=self._region)
-        self._cache: dict[str, str] = {}
+        self._cache: Dict[str, str] = {}
 
-    def get(self, name: str) -> str | None:
+    def get(self, name: str) -> Optional[str]:
         if name in self._cache:
             return self._cache[name]
         try:
@@ -22,7 +23,7 @@ class Secrets:
             return None
         return None
 
-    def get_dart_key(self) -> str | None:
+    def get_dart_key(self) -> Optional[str]:
         s = self.get("OPENCORPINSIGHT_SECRETS")
         if s:
             try:
@@ -49,7 +50,7 @@ class Secrets:
                 pass
         return s
 
-    def get_perplexity_key(self) -> str | None:
+    def get_perplexity_key(self) -> Optional[str]:
         s = self.get("OPENCORPINSIGHT_SECRETS")
         if s:
             try:
@@ -61,7 +62,7 @@ class Secrets:
         s = self.get("PERPLEXITY_API_KEY")
         return s
 
-    def get_gpt_key(self) -> str | None:
+    def get_gpt_key(self) -> Optional[str]:
         s = self.get("OPENCORPINSIGHT_SECRETS")
         if s:
             try:
@@ -73,7 +74,7 @@ class Secrets:
         s = self.get("GPT_API_KEY")
         return s
 
-    def get_gpt_key(self) -> str | None:
+    def get_gpt_key(self) -> Optional[str]:
         s = self.get("OPENCORPINSIGHT_SECRETS")
         if s:
             try:

@@ -807,7 +807,9 @@
         var userNicknameValue = '<%= userNickname != null ? userNickname : "웹사용자" %>';
         
         // 🔧 Flask 서버 연동 설정
-        const API_BASE_URL = 'http://43.203.170.37:5001'; // EC2 Flask 백엔드
+        const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+            ? 'http://localhost:5001' 
+            : 'http://43.203.170.37:5001'; // 환경에 따라 자동 선택
         const USER_SNO = userSnoValue;
         const USER_NICKNAME = userNicknameValue;
         let currentDashboardData = null; // 현재 대시보드 데이터

@@ -833,28 +833,24 @@ async def generate_dashboard_data_optimized(corp_code: str, bgn_de: str, end_de:
     # 1. 기업명 조회 (비동기)
     corp_name_task = get_corp_name_optimized(corp_code, year_range)
     
-    # 2. 뉴스 조회 (비동기) - 기업명은 나중에 업데이트
-    news_task = asyncio.create_task(get_news_optimized("", "3days"))
-    
-    # 3. 재무 데이터 조회 (병렬 처리)
+    # 2. 재무 데이터 조회 (병렬 처리)
     financial_tasks = []
     for year in years:
         task = get_financial_data_optimized(corp_code, str(year))
         financial_tasks.append(task)
     
     # 모든 비동기 작업 완료 대기
-    print(f"⏳ 병렬 처리 중... ({len(financial_tasks)}개 재무 데이터 + 기업명 + 뉴스)")
+    print(f"⏳ 병렬 처리 중... ({len(financial_tasks)}개 재무 데이터 + 기업명)")
     
-    # 기업명 먼저 가져오기
-    corp_name = await corp_name_task
+    # 기업명과 재무 데이터 병렬로 가져오기
+    corp_name, financial_results = await asyncio.gather(
+        corp_name_task,
+        asyncio.gather(*financial_tasks)
+    )
     
-    # 뉴스 조회 업데이트 (기업명 사용)
-    news_task.cancel()
-    news_task = get_news_optimized(corp_name, "3days")
-    
-    # 모든 재무 데이터와 뉴스 병렬로 가져오기
-    financial_results = await asyncio.gather(*financial_tasks)
-    news_articles = await news_task
+    # 3. 뉴스 조회 (기업명을 얻은 후)
+    print(f"🔍 뉴스 API 호출: {corp_name}")
+    news_articles = await get_news_optimized(corp_name, "3days")
     
     # 데이터 처리
     years_sorted = [str(year) for year in years]

@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 import pandas as pd
 from .dart_client import DartClient
 
@@ -600,7 +600,7 @@ class FinancialService:
                 "color": "#dc3545"
             }
 
-    def compare_financials(self, corp_codes: List[str], bsns_year: str, reprt_code: str = "11014", fs_div: str = "CFS", metrics: List[str] | None = None) -> Dict[str, Any]:
+    def compare_financials(self, corp_codes: List[str], bsns_year: str, reprt_code: str = "11014", fs_div: str = "CFS", metrics: Optional[List[str]] = None) -> Dict[str, Any]:
         metrics = metrics or ["매출액","영업이익","순이익","ROE","부채비율","영업이익률"]
         out: Dict[str, Dict[str, float]] = {}
         for code in corp_codes:
@@ -639,7 +639,7 @@ class FinancialService:
             out[code] = d
         return {"ok": True, "data": out}
 
-    def analyze_time_series(self, corp_code: str, analysis_period: int = 10, metrics: List[str] | None = None, reprt_code: str = "11014", fs_div: str = "CFS") -> Dict[str, Any]:
+    def analyze_time_series(self, corp_code: str, analysis_period: int = 10, metrics: Optional[List[str]] = None, reprt_code: str = "11014", fs_div: str = "CFS") -> Dict[str, Any]:
         """장기 재무 데이터 분석 (기본 10년)"""
         metrics = metrics or ["매출액","영업이익","순이익","총자산","총부채","총자본"]
         years = []

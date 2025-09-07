@@ -389,7 +389,9 @@
         var userSnoValue = parseInt('<%= userSno %>');
         var userNicknameValue = '<%= userNickname != null ? userNickname : "웹사용자" %>';
         
-        const API_BASE_URL = 'http://43.203.170.37:5001';
+        const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+            ? 'http://localhost:5001' 
+            : 'http://43.203.170.37:5001'; // 환경에 따라 자동 선택
         const USER_SNO = userSnoValue;
         const USER_NICKNAME = userNicknameValue;
     const chatMessages = document.getElementById('chatMessages');
