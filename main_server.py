@@ -5,6 +5,8 @@ import requests
 import zipfile
 import io
 import xml.etree.ElementTree as ET
+import asyncio
+import time
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 from flask import Flask, request, jsonify
@@ -32,6 +34,55 @@ print(f"🔍 API 키 로딩 결과:")
 print(f"   - DART_API_KEY: {'설정됨' if DART_API_KEY else 'None'} ({DART_API_KEY[:10] if DART_API_KEY else 'N/A'}...)")
 print(f"   - PERPLEXITY_API_KEY: {'설정됨' if PERPLEXITY_API_KEY else 'None'} ({PERPLEXITY_API_KEY[:10] if PERPLEXITY_API_KEY else 'N/A'}...)")
 print(f"   - GPT_API_KEY: {'설정됨' if GPT_API_KEY else 'None'} ({GPT_API_KEY[:10] if GPT_API_KEY else 'N/A'}...)")
+
+# 캐시 시스템 초기화
+CORP_NAME_CACHE = {}
+NEWS_CACHE = {}
+FINANCIAL_CACHE = {}
+
+# 캐시 만료 시간 (초)
+CACHE_EXPIRY = {
+    'corp_name': 3600,  # 1시간
+    'news': 1800,       # 30분
+    'financial': 7200   # 2시간
+}
+
+def is_cache_valid(cache_data: Dict, cache_type: str) -> bool:
+    """캐시가 유효한지 확인"""
+    if not cache_data:
+        return False
+    
+    cache_time = cache_data.get('timestamp', 0)
+    current_time = time.time()
+    expiry_time = CACHE_EXPIRY.get(cache_type, 3600)
+    
+    return (current_time - cache_time) < expiry_time
+
+def get_cached_data(cache_key: str, cache_type: str) -> Optional[Dict]:
+    """캐시에서 데이터 가져오기"""
+    cache_storage = {
+        'corp_name': CORP_NAME_CACHE,
+        'news': NEWS_CACHE,
+        'financial': FINANCIAL_CACHE
+    }.get(cache_type, {})
+    
+    cache_data = cache_storage.get(cache_key)
+    if cache_data and is_cache_valid(cache_data, cache_type):
+        return cache_data.get('data')
+    return None
+
+def set_cached_data(cache_key: str, cache_type: str, data: Dict):
+    """캐시에 데이터 저장"""
+    cache_storage = {
+        'corp_name': CORP_NAME_CACHE,
+        'news': NEWS_CACHE,
+        'financial': FINANCIAL_CACHE
+    }.get(cache_type, {})
+    
+    cache_storage[cache_key] = {
+        'data': data,
+        'timestamp': time.time()
+    }
 
 # 필수 키 검증 (최소 DART 키) - 로컬 테스트용으로 경고만 표시
 if not DART_API_KEY:
@@ -502,6 +553,150 @@ def search_news_perplexity(company_name: str, period: str = '3days') -> List[Dic
     print(f"❌ 뉴스 검색 실패, 빈 리스트 반환")
     return []
 
+async def get_corp_name_optimized(corp_code: str, year_range: str = None) -> str:
+    """최적화된 기업명 조회 (캐싱 + 비동기)"""
+    cache_key = f"{corp_code}_{year_range or 'default'}"
+    
+    # 캐시에서 확인
+    cached_name = get_cached_data(cache_key, 'corp_name')
+    if cached_name:
+        print(f"✅ 기업명 캐시 히트: {cached_name}")
+        return cached_name
+    
+    # 캐시 미스 - API 호출
+    print(f"🔍 기업명 API 호출: {corp_code}")
+    
+    try:
+        if year_range:
+            try:
+                start_year, end_year = year_range.split('-')
+                bgn_de = f"{start_year}0101"
+                end_de = f"{end_year}1231"
+            except:
+                bgn_de = '20240101'
+                end_de = '20241231'
+        else:
+            bgn_de = '20240101'
+            end_de = '20241231'
+        
+        url = 'https://opendart.fss.or.kr/api/list.json'
+        params = {
+            'crtfc_key': DART_API_KEY,
+            'corp_code': corp_code,
+            'bgn_de': bgn_de,
+            'end_de': end_de,
+            'pblntf_ty': 'A',
+            'page_no': 1,
+            'page_count': 1
+        }
+        
+        # 비동기 HTTP 요청
+        loop = asyncio.get_event_loop()
+        response = await loop.run_in_executor(
+            None, 
+            lambda: requests.get(url, params=params, timeout=30)
+        )
+        
+        data = response.json()
+        
+        if data['status'] == '000' and data['list']:
+            corp_name = data['list'][0]['corp_name']
+            # 캐시에 저장
+            set_cached_data(cache_key, 'corp_name', corp_name)
+            print(f"✅ 기업명 조회 성공: {corp_name}")
+            return corp_name
+        else:
+            # 기본값 반환
+            default_name = f"기업_{corp_code}"
+            set_cached_data(cache_key, 'corp_name', default_name)
+            return default_name
+            
+    except Exception as e:
+        print(f"❌ 기업명 조회 실패: {e}")
+        default_name = f"기업_{corp_code}"
+        set_cached_data(cache_key, 'corp_name', default_name)
+        return default_name
+
+async def get_news_optimized(company_name: str, period: str = '3days') -> List[Dict]:
+    """최적화된 뉴스 조회 (캐싱 + 비동기)"""
+    cache_key = f"{company_name}_{period}"
+    
+    # 캐시에서 확인
+    cached_news = get_cached_data(cache_key, 'news')
+    if cached_news:
+        print(f"✅ 뉴스 캐시 히트: {len(cached_news)}개 기사")
+        return cached_news
+    
+    # 캐시 미스 - API 호출
+    print(f"🔍 뉴스 API 호출: {company_name}")
+    
+    try:
+        # 기존 search_news_perplexity 함수를 비동기로 래핑
+        loop = asyncio.get_event_loop()
+        news_articles = await loop.run_in_executor(
+            None,
+            lambda: search_news_perplexity(company_name, period)
+        )
+        
+        # 캐시에 저장
+        set_cached_data(cache_key, 'news', news_articles)
+        print(f"✅ 뉴스 조회 성공: {len(news_articles)}개 기사")
+        return news_articles
+        
+    except Exception as e:
+        print(f"❌ 뉴스 조회 실패: {e}")
+        # 기본 뉴스 반환
+        default_news = [{
+            'title': f'{company_name} 관련 뉴스',
+            'content': f'{company_name}에 대한 최신 뉴스입니다.',
+            'summary': f'{company_name} 뉴스 요약',
+            'published_date': datetime.now().strftime('%Y-%m-%d'),
+            'source': '기본 뉴스',
+            'url': ''
+        }]
+        set_cached_data(cache_key, 'news', default_news)
+        return default_news
+
+async def get_financial_data_optimized(corp_code: str, year: str) -> Dict:
+    """최적화된 재무 데이터 조회 (캐싱 + 비동기)"""
+    cache_key = f"{corp_code}_{year}"
+    
+    # 캐시에서 확인
+    cached_financial = get_cached_data(cache_key, 'financial')
+    if cached_financial:
+        print(f"✅ 재무 데이터 캐시 히트: {corp_code} {year}년")
+        return cached_financial
+    
+    # 캐시 미스 - API 호출
+    print(f"🔍 재무 데이터 API 호출: {corp_code} {year}년")
+    
+    try:
+        # 기존 _mcp_extract_summary_from_statements 함수를 비동기로 래핑
+        loop = asyncio.get_event_loop()
+        financial_data = await loop.run_in_executor(
+            None,
+            lambda: _mcp_extract_summary_from_statements(corp_code, year, f"2020-2023")
+        )
+        
+        # 캐시에 저장
+        set_cached_data(cache_key, 'financial', financial_data)
+        print(f"✅ 재무 데이터 조회 성공: {corp_code} {year}년")
+        return financial_data
+        
+    except Exception as e:
+        print(f"❌ 재무 데이터 조회 실패: {e}")
+        # 기본 재무 데이터 반환
+        default_financial = {
+            'revenue': 0,
+            'operating_profit': 0,
+            'net_profit': 0,
+            'total_assets': 0,
+            'total_debt': 0,
+            'total_equity': 0
+        }
+        set_cached_data(cache_key, 'financial', default_financial)
+        return default_financial
+
 def get_corp_name_from_dart(corp_code: str, year_range: str = None) -> str:
     """DART API를 통해 corp_code로 corp_name 조회 - 연도 기반 동적 검색"""
     try:
@@ -626,79 +821,61 @@ def _mcp_extract_summary_from_statements(corp_code: str, year: str, year_range: 
         return get_financial_data(corp_code, year)
 
 
-def generate_dashboard_data(corp_code: str, bgn_de: str, end_de: str, user_info: Dict) -> Dict:
-    """대시보드 데이터 생성 로직 - MCP 코어 사용(가능 시) + 기존 뉴스 파이프라인 유지"""
-    # 연도 범위를 DART API 검색에 전달
+async def generate_dashboard_data_optimized(corp_code: str, bgn_de: str, end_de: str, user_info: Dict) -> Dict:
+    """최적화된 대시보드 데이터 생성 (병렬 처리 + 캐싱)"""
+    print(f"🚀 최적화된 대시보드 데이터 생성 시작: {corp_code}")
+    start_time = time.time()
+    
     year_range = f"{bgn_de}-{end_de}"
-    corp_name = get_corp_name_from_dart(corp_code, year_range)
-
-    # 프론트에서 받은 연도 범위 그대로 사용
     years = list(range(int(bgn_de), int(end_de) + 1))
     print(f"📊 요청된 연도 범위: {bgn_de}-{end_de} ({len(years)}년)")
-
-    # MCP의 시계열 분석 사용 시도
-    years_sorted: List[str] = []
-    revenue_trend: List[float] = []
-    operating_profit_trend: List[float] = []
-    net_profit_trend: List[float] = []
-
-    if _MCP_SVC is not None:
-        try:
-            # MCP 시계열 분석은 고정된 로직이므로, 요청된 연도 범위로 직접 데이터 조회
-            print(f"🔍 요청된 연도 범위로 직접 데이터 조회: {corp_code} ({year_range})")
-            
-            # 요청된 연도 범위로 직접 재무 데이터 조회
-            years_sorted = []
-            revenue_trend = []
-            operating_profit_trend = []
-            net_profit_trend = []
-            
-            for year in years:
-                try:
-                    print(f"  📊 {year}년 재무 데이터 조회 중...")
-                    financial_data = _mcp_extract_summary_from_statements(corp_code, str(year), year_range)
-                    
-                    years_sorted.append(str(year))
-                    revenue_trend.append(financial_data.get('revenue', 0.0))
-                    operating_profit_trend.append(financial_data.get('operating_profit', 0.0))
-                    net_profit_trend.append(financial_data.get('net_profit', 0.0))
-                    
-                except Exception as e:
-                    print(f"  ❌ {year}년 데이터 조회 실패: {e}")
-                    # 실패한 연도는 0으로 채움
-                    years_sorted.append(str(year))
-                    revenue_trend.append(0.0)
-                    operating_profit_trend.append(0.0)
-                    net_profit_trend.append(0.0)
-            
-            if years_sorted:
-                print(f"✅ 연도별 재무 데이터 조회 성공: {len(years_sorted)}년 데이터")
-            else:
-                print(f"⚠️ 연도별 재무 데이터 조회 실패, 기본 연도 사용")
-                years_sorted = [str(y) for y in sorted(years)]
-                
-        except Exception as e:
-            print(f"❌ 연도별 재무 데이터 조회 실패: {e}")
-            years_sorted = [str(y) for y in sorted(years)]
-    else:
-        print(f"⚠️ MCP 서비스 미사용, 기본 연도 사용")
-        years_sorted = [str(y) for y in sorted(years)]
-
-    # 최신년도 요약
-    latest_year = years_sorted[-1] if years_sorted else end_de
-    latest_financial = _mcp_extract_summary_from_statements(corp_code, str(latest_year), year_range)
-
-
-
-    # 뉴스 데이터 (실시간 최신 뉴스 고정)
-    news_articles = search_news_perplexity(corp_name, "3days")
-
+    
+    # 1. 기업명 조회 (비동기)
+    corp_name_task = get_corp_name_optimized(corp_code, year_range)
+    
+    # 2. 뉴스 조회 (비동기) - 기업명은 나중에 업데이트
+    news_task = asyncio.create_task(get_news_optimized("", "3days"))
+    
+    # 3. 재무 데이터 조회 (병렬 처리)
+    financial_tasks = []
+    for year in years:
+        task = get_financial_data_optimized(corp_code, str(year))
+        financial_tasks.append(task)
+    
+    # 모든 비동기 작업 완료 대기
+    print(f"⏳ 병렬 처리 중... ({len(financial_tasks)}개 재무 데이터 + 기업명 + 뉴스)")
+    
+    # 기업명 먼저 가져오기
+    corp_name = await corp_name_task
+    
+    # 뉴스 조회 업데이트 (기업명 사용)
+    news_task.cancel()
+    news_task = get_news_optimized(corp_name, "3days")
+    
+    # 모든 재무 데이터와 뉴스 병렬로 가져오기
+    financial_results = await asyncio.gather(*financial_tasks)
+    news_articles = await news_task
+    
+    # 데이터 처리
+    years_sorted = [str(year) for year in years]
+    revenue_trend = [data.get('revenue', 0) for data in financial_results]
+    operating_profit_trend = [data.get('operating_profit', 0) for data in financial_results]
+    net_profit_trend = [data.get('net_profit', 0) for data in financial_results]
+    
+    # 최신년도 재무 데이터
+    latest_financial = financial_results[-1] if financial_results else {}
+    
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    
+    print(f"✅ 최적화된 대시보드 데이터 생성 완료: {elapsed_time:.2f}초")
+    
     return {
         'company_info': {
             'corp_code': corp_code,
             'corp_name': corp_name,
             'analysis_period': f"{bgn_de}-{end_de}",
-            'latest_year': latest_year
+            'latest_year': str(years[-1])
         },
         'financial_summary': {
             'revenue': latest_financial.get('revenue', 0),
@@ -708,12 +885,11 @@ def generate_dashboard_data(corp_code: str, bgn_de: str, end_de: str, user_info:
             'total_debt': latest_financial.get('total_debt', 0),
             'total_equity': latest_financial.get('total_equity', 0)
         },
-
         'yearly_trends': {
             'years': years_sorted,
-            'revenue': revenue_trend or [0.0]*len(years_sorted),
-            'operating_profit': operating_profit_trend or [0.0]*len(years_sorted),
-            'net_profit': net_profit_trend or [0.0]*len(years_sorted)
+            'revenue': revenue_trend,
+            'operating_profit': operating_profit_trend,
+            'net_profit': net_profit_trend
         },
         'news_data': {
             'total_articles': len(news_articles),
@@ -744,8 +920,27 @@ def generate_dashboard_data(corp_code: str, bgn_de: str, end_de: str, user_info:
             )
         },
         'user_context': user_info,
-        'generated_at': datetime.now().isoformat()
+        'generated_at': datetime.now().isoformat(),
+        'performance_metrics': {
+            'generation_time': elapsed_time,
+            'cache_hits': {
+                'corp_name': len([k for k in CORP_NAME_CACHE.keys() if k != 'dart_api_key']),
+                'news': len(NEWS_CACHE),
+                'financial': len(FINANCIAL_CACHE)
+            }
+        }
     }
+
+def generate_dashboard_data(corp_code: str, bgn_de: str, end_de: str, user_info: Dict) -> Dict:
+    """대시보드 데이터 생성 로직 - 최적화된 버전으로 래핑"""
+    # 비동기 함수를 동기 함수로 래핑
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        result = loop.run_until_complete(generate_dashboard_data_optimized(corp_code, bgn_de, end_de, user_info))
+        return result
+    finally:
+        loop.close()
 
 
 @app.route('/api/news/<company_name>', methods=['GET'])
