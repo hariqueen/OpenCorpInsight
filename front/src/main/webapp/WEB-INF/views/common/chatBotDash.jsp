@@ -886,6 +886,11 @@
         const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
             ? 'http://localhost:5001' 
             : 'http://43.203.170.37:5001'; // 환경에 따라 자동 선택
+            
+        // 🔧 DB 서버 연동 설정
+        const DB_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+            ? 'http://localhost:5002' 
+            : 'http://43.203.170.37:5002'; // 환경에 따라 자동 선택
         const USER_SNO = userSnoValue;
         const USER_NICKNAME = userNicknameValue;
         let currentDashboardData = null; // 현재 대시보드 데이터
@@ -1501,9 +1506,13 @@
         // 페이지 로드 시 기존 대화 이력 불러오기
         async function loadChatHistory() {
             try {
-                const response = await fetch(`http://localhost:5002/api/chat/conversation/${USER_SNO}`);
+                console.log(`📚 대화 이력 로드 시도: ${DB_BASE_URL}/api/chat/conversation/${USER_SNO}`);
+                const response = await fetch(`${DB_BASE_URL}/api/chat/conversation/${USER_SNO}`);
+                
                 if (response.ok) {
                     const result = await response.json();
+                    console.log('📚 DB 응답:', result);
+                    
                     if (result.status === 'success' && result.data.conversation.length > 0) {
                         // 기존 환영 메시지 제거
                         const messagesContainer = document.getElementById('messagesContainer');
@@ -1514,10 +1523,15 @@
                             await addMessageWithoutSaving(msg.role, msg.content);
                         }
                         console.log(`📚 대화 이력 복원 완료: ${result.data.conversation.length}개 메시지`);
+                    } else {
+                        console.log('📚 저장된 대화 이력 없음');
                     }
+                } else {
+                    console.warn(`📚 DB 서버 응답 오류: ${response.status} ${response.statusText}`);
                 }
             } catch (error) {
-                console.warn('대화 이력 로드 실패:', error);
+                console.warn('📚 대화 이력 로드 실패 - DB 서버 연결 불가:', error);
+                console.warn(`📚 DB 서버 URL: ${DB_BASE_URL}`);
                 // 실패해도 기본 환영 메시지는 유지
             }
         }
@@ -1598,7 +1612,7 @@
                     return;
                 }
 
-                const response = await fetch('http://localhost:5002/api/chat', {
+                const response = await fetch(`${DB_BASE_URL}/api/chat`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
