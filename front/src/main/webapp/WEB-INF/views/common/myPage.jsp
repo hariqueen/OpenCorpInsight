@@ -161,15 +161,55 @@
 
 <script>
     // 페이지 로드 시 현재 닉네임 로드
-    document.addEventListener('DOMContentLoaded', function() {
-        // 임시로 비워둠 - 사용자가 직접 입력하도록
+    document.addEventListener('DOMContentLoaded', async function() {
         console.log('프로필 페이지 로드 완료');
+        await loadCurrentNickname();
     });
+    
+    // 현재 프로필을 DB에서 불러오는 함수
+    async function loadCurrentNickname() {
+        try {
+            console.log('프로필 데이터 로드 시도');
+            
+            const response = await fetch('/getProfile');
+            const result = await response.json();
+            
+            if (result.status === 'success') {
+                const profile = result.data;
+                
+                // 폼 필드에 데이터 설정
+                if (profile.nickname) {
+                    document.getElementById('nickname').value = profile.nickname;
+                }
+                if (profile.interest) {
+                    document.getElementById('interest').value = profile.interest;
+                }
+                if (profile.purpose) {
+                    document.getElementById('purpose').value = profile.purpose;
+                }
+                if (profile.difficulty) {
+                    const difficultyRadio = document.querySelector(`input[name="difficulty"][value="${profile.difficulty}"]`);
+                    if (difficultyRadio) {
+                        difficultyRadio.checked = true;
+                    }
+                }
+                
+                console.log('프로필 데이터 로드 완료:', profile);
+            } else {
+                console.log('프로필 데이터 없음 - 새 사용자');
+            }
+        } catch (error) {
+            console.error('프로필 로드 오류:', error);
+        }
+    }
 
     document.getElementById('profileForm').addEventListener('submit', async function(e){
         e.preventDefault();
 
         const nickname = document.getElementById('nickname').value;
+        const interest = document.getElementById('interest').value;
+        const purpose = document.getElementById('purpose').value;
+        const difficulty = document.querySelector('input[name="difficulty"]:checked')?.value || '';
         
         if (!nickname || nickname.trim() === '') {
             alert('닉네임을 입력해주세요.');
@@ -177,12 +217,18 @@
         }
 
         try {
+            const formData = new URLSearchParams();
+            formData.append('nickname', nickname);
+            formData.append('interest', interest);
+            formData.append('purpose', purpose);
+            formData.append('difficulty', difficulty);
+            
             const response = await fetch('/updateProfile', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
                 },
-                body: `nickname=${encodeURIComponent(nickname)}`
+                body: formData
             });
 
             const result = await response.json();

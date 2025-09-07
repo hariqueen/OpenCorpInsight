@@ -19,8 +19,14 @@
     </insert>
     
     <update id="updateUserProfile" parameterType="map">
-        INSERT OR REPLACE INTO user_details (user_sno, nickname)
-        VALUES (#{userSno}, #{nickname})
+        INSERT OR REPLACE INTO user_details (user_sno, nickname, difficulty, interest, purpose)
+        VALUES (#{userSno}, #{nickname}, #{difficulty}, #{interest}, #{purpose})
     </update>
+    
+    <select id="getUserProfile" parameterType="int" resultType="map">
+        SELECT nickname, difficulty, interest, purpose
+        FROM user_details 
+        WHERE user_sno = #{userSno}
+    </select>
 </mapper>
 

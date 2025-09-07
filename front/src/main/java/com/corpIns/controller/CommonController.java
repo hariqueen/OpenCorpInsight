@@ -58,9 +58,45 @@ public class CommonController {
         return "common/compareDetail"; // /WEB-INF/views/common/compareDetail.jsp
     }
     
+    @GetMapping("/getProfile")
+    @ResponseBody
+    public Map<String, Object> getProfile(HttpSession session) {
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            User loginUser = (User) session.getAttribute("loginUser");
+            if (loginUser == null) {
+                response.put("status", "error");
+                response.put("message", "로그인이 필요합니다.");
+                return response;
+            }
+            
+            Map<String, Object> profile = userMapper.getUserProfile(loginUser.getUserSno());
+            if (profile == null) {
+                profile = new HashMap<>();
+                profile.put("nickname", "");
+                profile.put("difficulty", "");
+                profile.put("interest", "");
+                profile.put("purpose", "");
+            }
+            
+            response.put("status", "success");
+            response.put("data", profile);
+            
+        } catch (Exception e) {
+            response.put("status", "error");
+            response.put("message", "프로필 조회 중 오류가 발생했습니다: " + e.getMessage());
+        }
+        
+        return response;
+    }
+    
     @PostMapping("/updateProfile")
     @ResponseBody
     public Map<String, Object> updateProfile(@RequestParam String nickname,
+                                           @RequestParam(required = false) String difficulty,
+                                           @RequestParam(required = false) String interest,
+                                           @RequestParam(required = false) String purpose,
                                            HttpSession session) {
         Map<String, Object> response = new HashMap<>();
         
@@ -76,6 +112,9 @@ public class CommonController {
             Map<String, Object> updateData = new HashMap<>();
             updateData.put("userSno", loginUser.getUserSno());
             updateData.put("nickname", nickname);
+            updateData.put("difficulty", difficulty);
+            updateData.put("interest", interest);
+            updateData.put("purpose", purpose);
             
             userMapper.updateUserProfile(updateData);
             

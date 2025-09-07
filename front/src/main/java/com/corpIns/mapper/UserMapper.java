@@ -13,4 +13,6 @@ public interface UserMapper {
     void insertUser(Map<String, Object> userData);
     
     void updateUserProfile(Map<String, Object> userData);
+    
+    Map<String, Object> getUserProfile(int userSno);
 }
