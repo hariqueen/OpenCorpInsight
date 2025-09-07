@@ -37,6 +37,23 @@ print(f"   - PERPLEXITY_API_KEY: {'설정됨' if PERPLEXITY_API_KEY else 'None'}
 print(f"   - GPT_API_KEY: {'설정됨' if GPT_API_KEY else 'None'} ({GPT_API_KEY[:10] if GPT_API_KEY else 'N/A'}...)")
 print(f"   - GEMINI_API_KEY: {'설정됨' if GEMINI_API_KEY else 'None'} ({GEMINI_API_KEY[:10] if GEMINI_API_KEY else 'N/A'}...)")
 
+# DB API 서버 URL 설정 (환경에 따라 동적 설정)
+try:
+    # EC2 환경에서는 localhost 사용, 로컬에서는 None으로 설정하여 DB 저장 비활성화
+    import socket
+    hostname = socket.gethostname()
+    if 'ip-' in hostname or 'ec2' in hostname.lower():
+        # EC2 환경
+        DB_API_BASE_URL = 'http://localhost:5002'
+        print(f"✅ EC2 환경 감지 - DB API URL: {DB_API_BASE_URL}")
+    else:
+        # 로컬 환경 - DB 저장 비활성화
+        DB_API_BASE_URL = None
+        print("🏠 로컬 환경 감지 - DB 저장 비활성화")
+except Exception as e:
+    DB_API_BASE_URL = None
+    print(f"⚠️ 환경 감지 실패 - DB 저장 비활성화: {e}")
+
 # 캐시 시스템 초기화
 CORP_NAME_CACHE = {}
 NEWS_CACHE = {}
