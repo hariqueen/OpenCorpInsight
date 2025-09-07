@@ -120,8 +120,21 @@ except Exception as _mcp_init_err:
 DB_API_BASE_URL = "http://localhost:5002"  # 로컬 DB API 서버 주소
 
 # 로깅 설정
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    force=True
+)
 logger = logging.getLogger(__name__)
+
+# print 함수 버퍼링 해제를 위한 래퍼
+import sys
+def print_flush(*args, **kwargs):
+    print(*args, **kwargs)
+    sys.stdout.flush()
+
+# 기존 print를 flush 버전으로 교체
+print = print_flush
 
 # 글로벌 캐시
 CORP_CODE_CACHE = {}
