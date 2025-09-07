@@ -417,7 +417,7 @@ def search_news_perplexity(company_name: str, period: str = '3days') -> List[Dic
 """
         
         data = {
-            "model": "sonar-small-online",  # 더 빠른 모델로 변경
+            "model": "sonar",  # 가장 빠른 기본 모델로 변경
             "messages": [
                 {"role": "system", "content": "당신은 재무 뉴스 수집 및 요약 전문가입니다. 반드시 JSON만 반환하고, summary는 정확히 3줄로 작성합니다."},
                 {"role": "user", "content": prompt}
@@ -444,8 +444,16 @@ def search_news_perplexity(company_name: str, period: str = '3days') -> List[Dic
                 return []
             
             try:
+                # 마크다운 코드 블록 제거 후 JSON 파싱
+                clean_content = content.strip()
+                if clean_content.startswith('```json'):
+                    clean_content = clean_content[7:]  # ```json 제거
+                if clean_content.endswith('```'):
+                    clean_content = clean_content[:-3]  # ``` 제거
+                clean_content = clean_content.strip()
+                
                 # JSON 파싱
-                news_data = json.loads(content)
+                news_data = json.loads(clean_content)
                 articles = news_data.get('articles', [])
                 
                 if not articles:
