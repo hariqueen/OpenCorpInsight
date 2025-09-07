@@ -411,45 +411,13 @@ def internal_error(error):
         'message': '서버 내부 오류가 발생했습니다.'
     }), 500
 
-# ========== 이 서버는 더 이상 사용되지 않습니다 ==========
-# DB API가 main_server.py (포트 5001)에 통합되었습니다.
-# 이 파일은 참고용으로만 보관됩니다.
 
 if __name__ == '__main__':
-    print("⚠️  이 DB 서버는 더 이상 사용되지 않습니다.")
-    print("📍 DB API가 메인 서버(포트 5001)에 통합되었습니다.")
-    print("🔗 메인 서버: python main_server.py")
+    print("데이터베이스 파일 확인:", DB_PATH)
+    print("   - http://localhost:5002/api/test")
+    print("   - http://localhost:5002/api/test/db") 
+    print("   - http://localhost:5002/api/users")
+    print("   - http://localhost:5002/api/chat")
+    print("   - http://localhost:5002/api/chat/conversation/<user_sno>")
     
-    # 실행 방지
-    # app.run(host='0.0.0.0', port=5002, debug=False)
-
-# ========== 설치 및 실행 방법 ==========
-"""
-1. 필요한 패키지 설치:
-   pip install flask flask-cors
-
-2. DB 경로 수정:
-   DB_PATH = '/home/ubuntu/chatbot.db'  # 실제 경로로 수정
-
-3. 실행:
-   python app.py
-
-4. 테스트:
-   curl http://localhost:8080/api/test
-   curl http://localhost:8080/api/users
-"""
-
-# ========== API 엔드포인트 목록 ==========
-"""
-GET  /api/test                     - 연결 테스트
-GET  /api/test/db                  - DB 연결 테스트
-GET  /api/users                    - 모든 사용자 조회
-GET  /api/users/<user_sno>         - 특정 사용자 조회
-POST /api/users                    - 새 사용자 생성
-GET  /api/chat                     - 모든 채팅 메시지 조회 (페이지네이션)
-GET  /api/chat/user/<user_sno>     - 특정 사용자 채팅 기록
-POST /api/chat                     - 새 채팅 메시지 저장
-GET  /api/chat/conversation/<user_sno> - 대화 형태 채팅 기록
-DELETE /api/chat/<message_id>      - 채팅 메시지 삭제
-GET  /api/stats                    - 전체 통계
-"""
+    app.run(host='0.0.0.0', port=5002, debug=False)
