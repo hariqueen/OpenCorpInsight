@@ -197,6 +197,25 @@
             margin-top: 20px;
         }
 
+        .news-loading {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 20px;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9em;
+        }
+
+        .spinner-small {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top: 2px solid #00d4ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
         .news-stats {
             display: flex;
             gap: 8px;
@@ -744,6 +763,10 @@
                 <!-- 뉴스 섹션 -->
                 <div class="news-section">
                     <h3 class="chart-title">📰 최신 뉴스</h3>
+                    <div id="newsLoading" class="news-loading" style="display: none;">
+                        <div class="spinner-small"></div>
+                        <span>뉴스를 불러오는 중...</span>
+                    </div>
                     <div class="news-stats" id="newsStats">
                         <!-- 뉴스 통계 -->
                     </div>
@@ -817,6 +840,52 @@
         let profitChart = null;
         let spiderChart = null;
         let heatmapChart = null;
+
+        // 🔧 뉴스 비동기 로딩 함수
+        async function fetchNewsData(corpName) {
+            try {
+                console.log(`📰 뉴스 데이터 요청: ${corpName}`);
+                
+                const requestData = {
+                    corp_name: corpName,
+                    period: '3days'
+                };
+
+                console.log('뉴스 API 요청:', `${API_BASE_URL}/api/dashboard/news`);
+                
+                const response = await fetch(`${API_BASE_URL}/api/dashboard/news`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                console.log('뉴스 API 응답 상태:', response.status, response.statusText);
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    console.error('뉴스 API 오류 응답:', errorData);
+                    throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const newsResponse = await response.json();
+                console.log('뉴스 API 응답 데이터:', newsResponse);
+                
+                return newsResponse.data;
+                
+            } catch (error) {
+                console.error('뉴스 데이터 조회 실패:', error);
+                return {
+                    total_articles: 0,
+                    has_news: false,
+                    status: 'error',
+                    articles: [],
+                    summary_stats: { positive_news: 0, neutral_news: 0, negative_news: 0 },
+                    message: `뉴스 조회 실패: ${error.message}`
+                };
+            }
+        }
 
         // 🔧 API 호출 함수
         async function fetchDashboardData(corpCode, startYear = '2020', endYear = '2023') {
@@ -1143,34 +1212,8 @@
                     netChangeEl.className = `metric-change ${netChange.isPositive ? 'change-positive' : 'change-negative'}`;
                 }
 
-                // 뉴스 통계
-                const newsStats = document.getElementById('newsStats');
-                if (data.news_data.has_news) {
-                    newsStats.innerHTML = `
-                        <div class="news-stat stat-positive">긍정 ${data.news_data.summary_stats.positive_news}건</div>
-                        <div class="news-stat stat-neutral">중립 ${data.news_data.summary_stats.neutral_news}건</div>
-                        <div class="news-stat stat-negative">부정 ${data.news_data.summary_stats.negative_news}건</div>
-                    `;
-                } else {
-                    newsStats.innerHTML = '<div class="news-stat">뉴스 없음</div>';
-                }
-
-                // 뉴스 기사
-                const newsArticles = document.getElementById('newsArticles');
-                if (data.news_data.has_news && data.news_data.articles.length > 0) {
-                    newsArticles.innerHTML = data.news_data.articles.map(article => `
-                        <div class="news-item">
-                            <div class="news-title">${article.title}</div>
-                            <div class="news-summary">${article.summary}</div>
-                            <div class="news-meta">
-                                <span>${article.source}</span>
-                                <span>${article.published_date}</span>
-                            </div>
-                        </div>
-                    `).join('');
-                } else {
-                    newsArticles.innerHTML = '<div class="news-item">최근 뉴스가 없습니다.</div>';
-                }
+                // 뉴스 로딩 표시 (초기 상태)
+                showNewsLoading();
 
                 // 차트 생성
                 createRevenueChart(data);
@@ -1193,6 +1236,76 @@
             }
         }
 
+        // 🔧 뉴스 관련 유틸리티 함수들
+        function showNewsLoading() {
+            document.getElementById('newsLoading').style.display = 'flex';
+            document.getElementById('newsStats').style.display = 'none';
+            document.getElementById('newsArticles').innerHTML = '';
+        }
+
+        function hideNewsLoading() {
+            document.getElementById('newsLoading').style.display = 'none';
+            document.getElementById('newsStats').style.display = 'flex';
+        }
+
+        function renderNewsData(newsData) {
+            try {
+                hideNewsLoading();
+                
+                // 뉴스 통계
+                const newsStats = document.getElementById('newsStats');
+                if (newsData.has_news) {
+                    newsStats.innerHTML = `
+                        <div class="news-stat stat-positive">긍정 ${newsData.summary_stats.positive_news}건</div>
+                        <div class="news-stat stat-neutral">중립 ${newsData.summary_stats.neutral_news}건</div>
+                        <div class="news-stat stat-negative">부정 ${newsData.summary_stats.negative_news}건</div>
+                    `;
+                } else {
+                    newsStats.innerHTML = '<div class="news-stat">뉴스 없음</div>';
+                }
+
+                // 뉴스 기사
+                const newsArticles = document.getElementById('newsArticles');
+                if (newsData.has_news && newsData.articles.length > 0) {
+                    newsArticles.innerHTML = newsData.articles.map(article => `
+                        <div class="news-item">
+                            <div class="news-title">${article.title}</div>
+                            <div class="news-summary">${article.summary}</div>
+                            <div class="news-meta">
+                                <span>${article.source}</span>
+                                <span>${article.published_date}</span>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    newsArticles.innerHTML = `<div class="news-item">${newsData.message || '최근 뉴스가 없습니다.'}</div>`;
+                }
+
+                console.log('✅ 뉴스 데이터 렌더링 완료:', newsData);
+                
+            } catch (error) {
+                console.error('뉴스 렌더링 실패:', error);
+                hideNewsLoading();
+                document.getElementById('newsArticles').innerHTML = '<div class="news-item">뉴스 로딩 중 오류가 발생했습니다.</div>';
+            }
+        }
+
+        // 🔧 비동기 뉴스 로딩 (대시보드 로딩 후 별도 실행)
+        async function loadNewsAsync(corpName) {
+            try {
+                console.log(`🔄 비동기 뉴스 로딩 시작: ${corpName}`);
+                showNewsLoading();
+                
+                const newsData = await fetchNewsData(corpName);
+                renderNewsData(newsData);
+                
+            } catch (error) {
+                console.error('비동기 뉴스 로딩 실패:', error);
+                hideNewsLoading();
+                document.getElementById('newsArticles').innerHTML = '<div class="news-item">뉴스 로딩 실패</div>';
+            }
+        }
+
         // 🌟 외부에서 호출할 수 있는 메인 함수
         window.displayDashboard = async function(corpCode, startYear = '2020', endYear = null) {
             // 현재 연도를 기본값으로 사용
@@ -1209,6 +1322,15 @@
                 renderDashboard(dashboardData, corpCode, startYear);
 
                 console.log('대시보드 표시 완료');
+
+                // 대시보드 로딩 완료 후 비동기로 뉴스 로딩
+                const corpName = dashboardData.company_info.corp_name;
+                if (corpName) {
+                    console.log(`📰 뉴스 비동기 로딩 시작: ${corpName}`);
+                    loadNewsAsync(corpName).catch(error => {
+                        console.error('뉴스 비동기 로딩 실패:', error);
+                    });
+                }
 
             } catch (error) {
                 console.error('대시보드 표시 실패:', error);

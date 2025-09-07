@@ -848,17 +848,9 @@ async def generate_dashboard_data_optimized(corp_code: str, bgn_de: str, end_de:
         asyncio.gather(*financial_tasks)
     )
     
-    # 3. 뉴스 조회 (기업명을 얻은 후) - 빠른 응답을 위해 선택적 실행
-    try:
-        # 뉴스 조회를 더 짧은 타임아웃으로 실행
-        news_task = asyncio.create_task(get_news_optimized(corp_name, "3days"))
-        news_articles = await asyncio.wait_for(news_task, timeout=10.0)  # 10초 타임아웃
-    except asyncio.TimeoutError:
-        print(f"⚠️ 뉴스 조회 타임아웃 (10초), 기본 데이터로 진행")
-        news_articles = []
-    except Exception as e:
-        print(f"⚠️ 뉴스 조회 실패: {e}, 기본 데이터로 진행")
-        news_articles = []
+    # 3. 뉴스 조회 제거 - 별도 API로 분리하여 대시보드 로딩 속도 향상
+    print(f"📈 뉴스 조회 건너뛰기 - 별도 API로 처리하여 대시보드 로딩 속도 향상")
+    news_articles = []
     
     # 데이터 처리
     years_sorted = [str(year) for year in years]
@@ -896,32 +888,13 @@ async def generate_dashboard_data_optimized(corp_code: str, bgn_de: str, end_de:
             'net_profit': net_profit_trend
         },
         'news_data': {
-            'total_articles': len(news_articles),
+            'total_articles': 0,
             'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M'),
-            'has_news': len(news_articles) > 0,
-            'status': 'success' if len(news_articles) > 0 else 'no_news_found',
-            'articles': [
-                {
-                    'id': idx + 1,
-                    'title': article['title'],
-                    'summary': article['summary'],
-                    'full_content': article['content'],
-                    'published_date': article['published_date'],
-                    'source': article['source'],
-                    'url': article.get('url', ''),
-                    'relevance': 'high'
-                }
-                for idx, article in enumerate(news_articles[:5])
-            ] if len(news_articles) > 0 else [],
-            'summary_stats': {
-                'positive_news': len([a for a in news_articles if any(word in a.get('content', '').lower() for word in ['증가', '상승', '호조', '개선', '성장'])]) if news_articles else 0,
-                'neutral_news': len([a for a in news_articles if not any(word in a.get('content', '').lower() for word in ['증가', '상승', '호조', '개선', '성장', '감소', '하락', '부진', '악화'])]) if news_articles else 0,
-                'negative_news': len([a for a in news_articles if any(word in a.get('content', '').lower() for word in ['감소', '하락', '부진', '악화'])]) if news_articles else 0
-            } if len(news_articles) > 0 else {'positive_news': 0, 'neutral_news': 0, 'negative_news': 0},
-            'message': '최신 뉴스를 성공적으로 가져왔습니다.' if len(news_articles) > 0 else (
-                f'{corp_name}에 대한 최근 뉴스를 찾을 수 없습니다. ' + 
-                ('Gemini API 키가 설정되지 않았습니다.' if not GEMINI_API_KEY else 'Gemini API 상태를 확인해주세요.')
-            )
+            'has_news': False,
+            'status': 'loading',
+            'articles': [],
+            'summary_stats': {'positive_news': 0, 'neutral_news': 0, 'negative_news': 0},
+            'message': '뉴스 데이터를 별도로 로딩 중입니다. 잠시만 기다려주세요.'
         },
         'user_context': user_info,
         'generated_at': datetime.now().isoformat(),
@@ -2041,6 +2014,76 @@ def search_company():
         logger.error(f"기업 검색 오류: {e}")
         return jsonify({'error': str(e)}), 404
 
+@app.route('/api/dashboard/news', methods=['POST'])
+def get_dashboard_news():
+    """대시보드용 뉴스 조회 API - 비동기 로딩용"""
+    try:
+        data = request.get_json()
+        
+        # 필수 필드 검증
+        if 'corp_name' not in data:
+            return jsonify({'error': '기업명(corp_name)이 필요합니다'}), 400
+        
+        corp_name = data['corp_name']
+        period = data.get('period', '3days')
+        
+        print(f"🔍 대시보드 뉴스 조회 시작: {corp_name} ({period})")
+        
+        # 뉴스 조회
+        news_articles = search_news_gemini(corp_name, period)
+        
+        # 대시보드 형식에 맞게 변환
+        news_data = {
+            'total_articles': len(news_articles),
+            'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M'),
+            'has_news': len(news_articles) > 0,
+            'status': 'success' if len(news_articles) > 0 else 'no_news_found',
+            'articles': [
+                {
+                    'id': idx + 1,
+                    'title': article['title'],
+                    'summary': article['summary'],
+                    'full_content': article['content'],
+                    'published_date': article['published_date'],
+                    'source': article['source'],
+                    'url': article.get('url', ''),
+                    'relevance': 'high'
+                }
+                for idx, article in enumerate(news_articles[:5])
+            ] if len(news_articles) > 0 else [],
+            'summary_stats': {
+                'positive_news': len([a for a in news_articles if any(word in a.get('content', '').lower() for word in ['증가', '상승', '호조', '개선', '성장'])]) if news_articles else 0,
+                'neutral_news': len([a for a in news_articles if not any(word in a.get('content', '').lower() for word in ['증가', '상승', '호조', '개선', '성장', '감소', '하락', '부진', '악화'])]) if news_articles else 0,
+                'negative_news': len([a for a in news_articles if any(word in a.get('content', '').lower() for word in ['감소', '하락', '부진', '악화'])]) if news_articles else 0
+            } if len(news_articles) > 0 else {'positive_news': 0, 'neutral_news': 0, 'negative_news': 0},
+            'message': '최신 뉴스를 성공적으로 가져왔습니다.' if len(news_articles) > 0 else (
+                f'{corp_name}에 대한 최근 뉴스를 찾을 수 없습니다. ' + 
+                ('Gemini API 키가 설정되지 않았습니다.' if not GEMINI_API_KEY else 'Gemini API 상태를 확인해주세요.')
+            )
+        }
+        
+        print(f"✅ 대시보드 뉴스 조회 완료: {len(news_articles)}개 기사")
+        
+        return jsonify({
+            'status': 'success',
+            'data': news_data
+        })
+        
+    except Exception as e:
+        logger.error(f"대시보드 뉴스 조회 오류: {e}")
+        return jsonify({
+            'status': 'error',
+            'error': str(e),
+            'data': {
+                'total_articles': 0,
+                'has_news': False,
+                'status': 'error',
+                'articles': [],
+                'summary_stats': {'positive_news': 0, 'neutral_news': 0, 'negative_news': 0},
+                'message': f'뉴스 조회 중 오류가 발생했습니다: {str(e)}'
+            }
+        }), 500
+
 @app.route('/api/news/<company_name>', methods=['GET'])
 def get_company_news_detailed(company_name):
     """특정 기업의 뉴스 조회 - 개선된 버전"""
@@ -2111,6 +2154,7 @@ def not_found(error):
         'available_endpoints': [
             'GET /api/health',
             'POST /api/dashboard',
+            'POST /api/dashboard/news',
             'POST /api/chat',
             'GET /api/company/search?name=기업명',
             'GET /api/news/<company_name>?period=month',
