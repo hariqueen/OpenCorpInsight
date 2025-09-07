@@ -4,6 +4,7 @@ public class User {
     private int userSno;
     private String email;
     private String name;
+    private String nickname;
     private String passwordHash;
     
     // Getter / Setter
@@ -32,5 +33,12 @@ public class User {
     }
     public void setName(String name) {
         this.name = name;
+    }
+    
+    public String getNickname() {
+        return nickname;
+    }
+    public void setNickname(String nickname) {
+        this.nickname = nickname;
     }
 }

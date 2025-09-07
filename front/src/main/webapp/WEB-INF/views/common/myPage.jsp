@@ -1,7 +1,7 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="com.corpIns.dto.User" %>
 <%
-    // 로그인 체크 - 로그인하지 않은 경우 로그인 페이지로 리다이렉트
+    // 로그인한 사용자 정보 가져오기
     User loginUser = (User) session.getAttribute("loginUser");
     if (loginUser == null) {
         response.sendRedirect(request.getContextPath() + "/login");
@@ -113,12 +113,12 @@
     <form id="profileForm">
         <div class="form-group">
             <label class="form-label" for="userId">아이디</label>
-            <input type="text" id="userId" name="userId" value="hardcoded_user" readonly>
+            <input type="text" id="userId" name="userId" value="<%= loginUser.getEmail() %>" readonly>
         </div>
 
         <div class="form-group">
             <label class="form-label" for="nickname">닉네임</label>
-            <input type="text" id="nickname" name="nickname" value="지윤">
+            <input type="text" id="nickname" name="nickname" value="<%= loginUser.getNickname() != null ? loginUser.getNickname() : "" %>">
         </div>
 
         <div class="form-group">
@@ -160,18 +160,38 @@
 </div>
 
 <script>
-    document.getElementById('profileForm').addEventListener('submit', function(e){
+    document.getElementById('profileForm').addEventListener('submit', async function(e){
         e.preventDefault();
 
-        const data = {
-            userId: document.getElementById('userId').value,
-            nickname: document.getElementById('nickname').value,
-            interest: document.getElementById('interest').value,
-            purpose: document.getElementById('purpose').value,
-            difficulty: document.querySelector('input[name="difficulty"]:checked')?.value
-        };
-        console.log('수정 데이터:', data);
-        alert('수정 완료! (하드코딩)');
+        const nickname = document.getElementById('nickname').value;
+        
+        if (!nickname || nickname.trim() === '') {
+            alert('닉네임을 입력해주세요.');
+            return;
+        }
+
+        try {
+            const response = await fetch('/updateProfile', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `nickname=${encodeURIComponent(nickname)}`
+            });
+
+            const result = await response.json();
+            
+            if (result.status === 'success') {
+                alert('프로필이 성공적으로 업데이트되었습니다!');
+                // 페이지 새로고침하여 상단 이름 표시 업데이트
+                window.location.reload();
+            } else {
+                alert('오류: ' + result.message);
+            }
+        } catch (error) {
+            console.error('프로필 업데이트 오류:', error);
+            alert('프로필 업데이트 중 오류가 발생했습니다.');
+        }
     });
 </script>
 

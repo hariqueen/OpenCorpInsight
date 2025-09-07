@@ -11,4 +11,6 @@ public interface UserMapper {
     User selectUserByEmail(@Param("email") String email);
 
     void insertUser(Map<String, Object> userData);
+    
+    void updateUserProfile(Map<String, Object> userData);
 }

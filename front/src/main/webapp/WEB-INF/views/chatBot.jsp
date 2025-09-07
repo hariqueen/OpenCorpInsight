@@ -11,7 +11,8 @@
     }
     
     int userSno = loginUser.getUserSno();
-    String userNickname = loginUser.getName() != null ? loginUser.getName() : loginUser.getEmail();
+    String userNickname = loginUser.getNickname() != null ? loginUser.getNickname() : 
+                       (loginUser.getName() != null ? loginUser.getName() : loginUser.getEmail());
 %>
 <html>
 <head>

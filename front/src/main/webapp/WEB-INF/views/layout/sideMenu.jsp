@@ -124,6 +124,9 @@
 <div style="position: fixed; top: 20px; right: 80px; color: white; font-weight: bold; z-index: 1001;">
     <c:if test="${not empty sessionScope.loginUser}">
         <c:choose>
+            <c:when test="${not empty sessionScope.loginUser.nickname}">
+                ${sessionScope.loginUser.nickname} 님
+            </c:when>
             <c:when test="${not empty sessionScope.loginUser.name}">
                 ${sessionScope.loginUser.name} 님
             </c:when>
