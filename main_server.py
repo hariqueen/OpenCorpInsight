@@ -410,8 +410,25 @@ def search_news_gemini(company_name: str, period: str = '3days') -> List[Dict]:
             "Content-Type": "application/json"
         }
         
-        # 간소화된 프롬프트 (속도 우선)
-        prompt = f"{company_name} {period_text} 재무/실적 뉴스 5건을 JSON으로만 반환: {{\"articles\":[{{\"title\":\"\",\"summary\":\"\",\"published_date\":\"\",\"source\":\"\",\"url\":\"\"}}]}}"
+        # 더 명확한 프롬프트 (JSON 파싱 오류 방지)
+        prompt = f"""
+{company_name} 기업의 {period_text} 동안의 최신 뉴스를 5개 찾아서 정확한 JSON 형식으로만 반환해주세요.
+
+다음 형식을 정확히 지켜주세요:
+{{
+  "articles": [
+    {{
+      "title": "뉴스 제목",
+      "summary": "뉴스 요약 (한 문장)",
+      "published_date": "2024-09-07",
+      "source": "뉴스 출처",
+      "url": "https://example.com"
+    }}
+  ]
+}}
+
+추가 설명 없이 JSON만 반환하세요.
+"""
         
         data = {
             "contents": [{
@@ -429,7 +446,13 @@ def search_news_gemini(company_name: str, period: str = '3days') -> List[Dict]:
         print(f"📡 Gemini API 요청 전송...")
         response = requests.post(url, headers=headers, json=data, timeout=15)
         print(f"📡 Gemini API 응답 상태: {response.status_code}")
-        # 디버그 로그 제거로 성능 향상
+        
+        # JSON 파싱 오류 디버깅을 위한 임시 로깅
+        if response.status_code == 200:
+            raw_text = response.text
+            print(f"🔍 Gemini 응답 길이: {len(raw_text)} 문자")
+            print(f"🔍 Gemini 응답 내용 (처음 500자): {raw_text[:500]}")
+            print(f"🔍 Gemini 응답 내용 (마지막 200자): {raw_text[-200:]}")
         
         if response.status_code == 200:
             result = response.json()
@@ -443,23 +466,51 @@ def search_news_gemini(company_name: str, period: str = '3days') -> List[Dict]:
                 return []
             
             try:
-                # 마크다운 코드 블록 제거 후 JSON 파싱
+                # 더 robust한 JSON 추출 및 파싱
                 clean_content = content.strip()
-                if clean_content.startswith('```json'):
-                    clean_content = clean_content[7:]  # ```json 제거
-                if clean_content.endswith('```'):
-                    clean_content = clean_content[:-3]  # ``` 제거
-                clean_content = clean_content.strip()
                 
-                # Gemini 특화: 첫 번째 { 부터 마지막 } 까지만 추출 (추가 텍스트 제거)
+                # 마크다운 코드 블록 제거
+                if '```json' in clean_content:
+                    clean_content = clean_content.split('```json')[1].split('```')[0].strip()
+                elif '```' in clean_content:
+                    clean_content = clean_content.split('```')[1].split('```')[0].strip()
+                
+                # 첫 번째 { 부터 마지막 } 까지만 추출
                 first_brace = clean_content.find('{')
                 last_brace = clean_content.rfind('}')
                 
                 if first_brace != -1 and last_brace != -1:
                     clean_content = clean_content[first_brace:last_brace + 1]
+                else:
+                    print(f"❌ JSON 구조를 찾을 수 없음: {clean_content[:200]}...")
+                    raise json.JSONDecodeError("No valid JSON structure found", clean_content, 0)
                 
-                # JSON 파싱
-                news_data = json.loads(clean_content)
+                # JSON 유효성 검사 및 파싱
+                try:
+                    news_data = json.loads(clean_content)
+                except json.JSONDecodeError as json_err:
+                    print(f"❌ JSON 파싱 실패: {str(json_err)}")
+                    print(f"❌ 문제 위치: 라인 {json_err.lineno}, 컬럼 {json_err.colno}")
+                    print(f"❌ 문제가 된 JSON 내용:")
+                    print("=" * 50)
+                    print(clean_content)
+                    print("=" * 50)
+                    
+                    # JSON 정리 시도 (따옴표 문제 등)
+                    import re
+                    print(f"🔧 JSON 정리 시도...")
+                    
+                    # 잘못된 따옴표 수정
+                    clean_content = re.sub(r'([{,]\s*)"([^"]*)"(\s*:\s*)"([^"]*)"', r'\1"\2": "\4"', clean_content)
+                    # 마지막 쉼표 제거
+                    clean_content = re.sub(r',(\s*[}\]])', r'\1', clean_content)
+                    
+                    print(f"🔧 정리된 JSON:")
+                    print("=" * 50)
+                    print(clean_content)
+                    print("=" * 50)
+                    
+                    news_data = json.loads(clean_content)
                 articles = news_data.get('articles', [])
                 
                 if not articles:
@@ -529,7 +580,7 @@ def search_news_gemini(company_name: str, period: str = '3days') -> List[Dict]:
         print(f"❌ Gemini API 호출 오류: {e}")
         logger.error(f"Gemini API 호출 오류: {e}")
  
-    print(f"❌ 뉴스 검색 실패, 빈 리스트 반환")
+    print(f"❌ 뉴스 검색 실패 - 실제 뉴스를 찾을 수 없음")
     return []
 
 async def get_corp_name_optimized(corp_code: str, year_range: str = None) -> str:
@@ -2057,8 +2108,7 @@ def get_dashboard_news():
                 'negative_news': len([a for a in news_articles if any(word in a.get('content', '').lower() for word in ['감소', '하락', '부진', '악화'])]) if news_articles else 0
             } if len(news_articles) > 0 else {'positive_news': 0, 'neutral_news': 0, 'negative_news': 0},
             'message': '최신 뉴스를 성공적으로 가져왔습니다.' if len(news_articles) > 0 else (
-                f'{corp_name}에 대한 최근 뉴스를 찾을 수 없습니다. ' + 
-                ('Gemini API 키가 설정되지 않았습니다.' if not GEMINI_API_KEY else 'Gemini API 상태를 확인해주세요.')
+                f'{corp_name}에 대한 최근 뉴스를 찾을 수 없습니다. 뉴스 검색 API에 일시적인 문제가 있을 수 있습니다.'
             )
         }
         
