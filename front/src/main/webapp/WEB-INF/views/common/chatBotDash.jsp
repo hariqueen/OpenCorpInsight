@@ -1075,7 +1075,7 @@
                     requestData.company_data = currentDashboardData;
                 }
 
-                const response = await fetch(`${DB_BASE_URL}/api/chat`, {
+                const response = await fetch(`${API_BASE_URL}/api/chat`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
