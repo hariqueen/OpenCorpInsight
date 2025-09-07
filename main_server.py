@@ -129,8 +129,9 @@ logger = logging.getLogger(__name__)
 
 # print 함수 버퍼링 해제를 위한 래퍼
 import sys
+_original_print = print  # 원본 print 함수 저장
 def print_flush(*args, **kwargs):
-    print(*args, **kwargs)
+    _original_print(*args, **kwargs)
     sys.stdout.flush()
 
 # 기존 print를 flush 버전으로 교체
