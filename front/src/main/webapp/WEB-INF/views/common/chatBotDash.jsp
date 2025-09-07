@@ -887,10 +887,8 @@
             ? 'http://localhost:5001' 
             : 'http://43.203.170.37:5001'; // 환경에 따라 자동 선택
             
-        // 🔧 DB 서버 연동 설정
-        const DB_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-            ? 'http://localhost:5002' 
-            : 'http://43.203.170.37:5002'; // 환경에 따라 자동 선택
+        // 🔧 DB 서버 연동 설정 (메인 서버와 통합)
+        const DB_BASE_URL = API_BASE_URL; // 메인 서버(5001)에 DB API 통합
         const USER_SNO = userSnoValue;
         const USER_NICKNAME = userNicknameValue;
         let currentDashboardData = null; // 현재 대시보드 데이터
@@ -1503,7 +1501,7 @@
         const chatInput = document.getElementById('chatInput');
         const sendButton = document.getElementById('sendButton');
 
-        // 페이지 로드 시 기존 대화 이력 불러오기
+        // 페이지 로드 시 기존 대화 이력 불러오기 (DB + 로컬스토리지 하이브리드)
         async function loadChatHistory() {
             try {
                 console.log(`📚 대화 이력 로드 시도: ${DB_BASE_URL}/api/chat/conversation/${USER_SNO}`);
@@ -1523,16 +1521,42 @@
                             await addMessageWithoutSaving(msg.role, msg.content);
                         }
                         console.log(`📚 대화 이력 복원 완료: ${result.data.conversation.length}개 메시지`);
+                        
+                        // 로컬스토리지에도 백업 저장
+                        localStorage.setItem(`chat_backup_${USER_SNO}`, JSON.stringify(result.data.conversation));
+                        return;
                     } else {
-                        console.log('📚 저장된 대화 이력 없음');
+                        console.log('📚 DB에 저장된 대화 이력 없음 - 로컬스토리지 확인');
                     }
                 } else {
-                    console.warn(`📚 DB 서버 응답 오류: ${response.status} ${response.statusText}`);
+                    console.warn(`📚 DB 서버 응답 오류: ${response.status} ${response.statusText} - 로컬스토리지 폴백`);
                 }
             } catch (error) {
                 console.warn('📚 대화 이력 로드 실패 - DB 서버 연결 불가:', error);
-                console.warn(`📚 DB 서버 URL: ${DB_BASE_URL}`);
-                // 실패해도 기본 환영 메시지는 유지
+                console.warn(`📚 DB 서버 URL: ${DB_BASE_URL} - 로컬스토리지 폴백`);
+            }
+            
+            // DB 실패 시 로컬스토리지에서 복원 시도
+            try {
+                const backupData = localStorage.getItem(`chat_backup_${USER_SNO}`);
+                if (backupData) {
+                    const conversation = JSON.parse(backupData);
+                    if (conversation.length > 0) {
+                        console.log('📱 로컬스토리지에서 대화 이력 복원 시도');
+                        
+                        // 기존 환영 메시지 제거
+                        const messagesContainer = document.getElementById('messagesContainer');
+                        messagesContainer.innerHTML = '';
+                        
+                        // 백업된 대화 이력 복원
+                        for (const msg of conversation) {
+                            await addMessageWithoutSaving(msg.role, msg.content);
+                        }
+                        console.log(`📱 로컬스토리지 복원 완료: ${conversation.length}개 메시지`);
+                    }
+                }
+            } catch (backupError) {
+                console.warn('📱 로컬스토리지 복원 실패:', backupError);
             }
         }
 
@@ -1626,12 +1650,48 @@
 
                 if (response.ok) {
                     console.log(`💾 채팅 메시지 DB 저장 성공: ${role}`);
+                    
+                    // 로컬스토리지에도 백업 (최근 50개 메시지만)
+                    updateLocalStorageBackup(role, textContent);
                 } else {
                     console.warn('채팅 메시지 DB 저장 실패:', response.status);
                 }
             } catch (error) {
                 console.warn('채팅 메시지 DB 저장 오류:', error);
                 // DB 저장 실패해도 채팅은 계속 진행
+            }
+        }
+
+        // 로컬스토리지 백업 업데이트 함수
+        function updateLocalStorageBackup(role, content) {
+            try {
+                const backupKey = `chat_backup_${USER_SNO}`;
+                let conversation = [];
+                
+                // 기존 백업 데이터 가져오기
+                const existingData = localStorage.getItem(backupKey);
+                if (existingData) {
+                    conversation = JSON.parse(existingData);
+                }
+                
+                // 새 메시지 추가
+                conversation.push({
+                    role: role,
+                    content: content,
+                    timestamp: new Date().toISOString()
+                });
+                
+                // 최근 50개 메시지만 유지
+                if (conversation.length > 50) {
+                    conversation = conversation.slice(-50);
+                }
+                
+                // 로컬스토리지에 저장
+                localStorage.setItem(backupKey, JSON.stringify(conversation));
+                console.log(`📱 로컬스토리지 백업 업데이트: ${conversation.length}개 메시지`);
+                
+            } catch (error) {
+                console.warn('📱 로컬스토리지 백업 실패:', error);
             }
         }
 

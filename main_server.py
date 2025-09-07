@@ -7,6 +7,7 @@ import io
 import xml.etree.ElementTree as ET
 import asyncio
 import time
+import sqlite3
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 from flask import Flask, request, jsonify
@@ -98,6 +99,19 @@ else:
 app = Flask(__name__)
 CORS(app, origins=["http://localhost:8080", "http://127.0.0.1:8080", "http://43.203.170.37:8080"])
 
+# 🔧 DB 설정 (채팅 이력 저장용)
+DB_PATH = os.path.join(os.path.dirname(__file__), 'DB', 'chatbot.db')
+
+def get_db_connection():
+    """SQLite 데이터베이스 연결"""
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row  # 딕셔너리 형태로 결과 반환
+    return conn
+
+def dict_from_row(row):
+    """SQLite Row 객체를 딕셔너리로 변환"""
+    return dict(row) if row else None
+
 # --- MCP 코어 연동 초기화 ---
 try:
     from app.core.dart_client import DartClient
@@ -119,8 +133,7 @@ except Exception as _mcp_init_err:
     print(f"❌ MCP 서비스 초기화 실패: {_mcp_init_err}")
     _MCP_SVC = None
 
-# DB API 서버 설정 (로컬 DB API 서버)
-DB_API_BASE_URL = "http://localhost:5002"  # 로컬 DB API 서버 주소
+# 🔧 채팅 이력 DB 통합 (포트 5001에서 처리)
 
 # 로깅 설정
 logging.basicConfig(
@@ -2647,6 +2660,87 @@ def get_advanced_charts(corp_code):
     except Exception as e:
         logger.error(f"고급 차트 데이터 생성 오류: {e}")
         return jsonify({'error': str(e)}), 500
+
+# ========== 채팅 이력 관련 API ==========
+
+@app.route('/api/chat', methods=['POST'])
+def save_chat_message():
+    """새 채팅 메시지 저장"""
+    try:
+        data = request.get_json()
+        
+        # 필수 필드 검증
+        required_fields = ['user_sno', 'content', 'role']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({
+                    'status': 'error',
+                    'message': f'{field}는 필수입니다.'
+                }), 400
+        
+        # role 검증
+        if data['role'] not in ['user', 'assistant']:
+            return jsonify({
+                'status': 'error',
+                'message': 'role은 user 또는 assistant여야 합니다.'
+            }), 400
+        
+        conn = get_db_connection()
+        cursor = conn.execute('''
+            INSERT INTO chat_messages (user_sno, content, role)
+            VALUES (?, ?, ?)
+        ''', (data['user_sno'], data['content'], data['role']))
+        
+        message_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+        
+        return jsonify({
+            'status': 'success',
+            'message': '채팅 메시지가 저장되었습니다.',
+            'data': {'message_id': message_id}
+        }), 201
+        
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+@app.route('/api/chat/conversation/<int:user_sno>', methods=['GET'])
+def get_conversation_format(user_sno):
+    """대화 형태로 포맷된 채팅 기록 조회"""
+    try:
+        conn = get_db_connection()
+        messages = conn.execute('''
+            SELECT content, role, created_at 
+            FROM chat_messages 
+            WHERE user_sno = ? 
+            ORDER BY created_at ASC
+        ''', (user_sno,)).fetchall()
+        conn.close()
+        
+        conversation = []
+        for msg in messages:
+            conversation.append({
+                'content': msg['content'],
+                'role': msg['role'],
+                'timestamp': msg['created_at']
+            })
+        
+        return jsonify({
+            'status': 'success',
+            'data': {
+                'user_sno': user_sno,
+                'conversation': conversation
+            },
+            'count': len(conversation)
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5001, debug=True)

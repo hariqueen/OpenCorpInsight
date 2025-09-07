@@ -411,22 +411,17 @@ def internal_error(error):
         'message': '서버 내부 오류가 발생했습니다.'
     }), 500
 
+# ========== 이 서버는 더 이상 사용되지 않습니다 ==========
+# DB API가 main_server.py (포트 5001)에 통합되었습니다.
+# 이 파일은 참고용으로만 보관됩니다.
+
 if __name__ == '__main__':
-    # 데이터베이스 파일 존재 확인
-    if not os.path.exists(DB_PATH):
-        print(f"⚠️  데이터베이스 파일을 찾을 수 없습니다: {DB_PATH}")
-        print("DB_PATH 변수를 올바른 경로로 수정해주세요.")
-    else:
-        print(f"✅ 데이터베이스 파일 확인: {DB_PATH}")
+    print("⚠️  이 DB 서버는 더 이상 사용되지 않습니다.")
+    print("📍 DB API가 메인 서버(포트 5001)에 통합되었습니다.")
+    print("🔗 메인 서버: python main_server.py")
     
-    print("🚀 Flask API 서버 시작...")
-    print("📍 테스트 URL:")
-    print("   - http://localhost:5002/api/test")
-    print("   - http://localhost:5002/api/test/db")
-    print("   - http://localhost:5002/api/users")
-    print("   - http://localhost:5002/api/chat")
-    
-    app.run(host='0.0.0.0', port=5002, debug=True)
+    # 실행 방지
+    # app.run(host='0.0.0.0', port=5002, debug=False)
 
 # ========== 설치 및 실행 방법 ==========
 """
