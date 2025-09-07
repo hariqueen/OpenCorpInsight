@@ -23,11 +23,11 @@ try:
     GPT_API_KEY = _mcp_secrets.get_gpt_key()
     GEMINI_API_KEY = _mcp_secrets.get_gemini_key()
     
-    print(f"✅ MCP Secrets에서 API 키 로드 성공")
+    print(f"MCP Secrets에서 API 키 로드 성공")
     
 except Exception as e:
-    print(f"❌ MCP Secrets 초기화 실패: {e}")
-    print("❌ AWS Secrets Manager에서 API 키를 가져올 수 없습니다.")
+    print(f"MCP Secrets 초기화 실패: {e}")
+    print("AWS Secrets Manager에서 API 키를 가져올 수 없습니다.")
     exit(1)
 
 # API 키 로딩 결과 로그
@@ -109,7 +109,7 @@ try:
     _MCP_SVC = FinancialService(_DART_CLIENT)
     
     # MCP 초기화 상태 로그
-    print(f"✅ MCP 서비스 초기화 성공")
+    print(f"MCP 서비스 초기화 성공")
     print(f"   - DART API Key: {'설정됨' if DART_API_KEY else 'None'}")
     print(f"   - Perplexity API Key: {'설정됨' if PERPLEXITY_API_KEY else 'None'}")
     print(f"   - Gemini API Key: {'설정됨' if GEMINI_API_KEY else 'None'}")
