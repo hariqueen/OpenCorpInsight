@@ -3,13 +3,15 @@
 <%
     // 로그인한 사용자 정보 가져오기
     User loginUser = (User) session.getAttribute("loginUser");
-    int userSno = 1; // 기본값
-    String userNickname = "웹사용자"; // 기본값
     
-    if (loginUser != null) {
-        userSno = loginUser.getUserSno();
-        userNickname = loginUser.getEmail(); // 또는 별도 닉네임 필드가 있다면 사용
+    // 로그인 체크 - 로그인하지 않은 경우 로그인 페이지로 리다이렉트
+    if (loginUser == null) {
+        response.sendRedirect(request.getContextPath() + "/login");
+        return;
     }
+    
+    int userSno = loginUser.getUserSno();
+    String userNickname = loginUser.getEmail(); // 또는 별도 닉네임 필드가 있다면 사용
 %>
 <html>
 <head>

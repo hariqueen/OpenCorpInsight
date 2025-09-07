@@ -4,13 +4,15 @@
 <%
     // 로그인한 사용자 정보 가져오기
     User loginUser = (User) session.getAttribute("loginUser");
-    int userSno = 1; // 기본값
-    String userNickname = "웹사용자"; // 기본값
     
-    if (loginUser != null) {
-        userSno = loginUser.getUserSno();
-        userNickname = loginUser.getEmail(); // 또는 별도 닉네임 필드가 있다면 사용
+    // 로그인 체크 - 로그인하지 않은 경우 로그인 페이지로 리다이렉트
+    if (loginUser == null) {
+        response.sendRedirect(request.getContextPath() + "/login");
+        return;
     }
+    
+    int userSno = loginUser.getUserSno();
+    String userNickname = loginUser.getEmail(); // 또는 별도 닉네임 필드가 있다면 사용
 %>
 <html>
 <head>
@@ -1375,19 +1377,27 @@
                     
                     const newsData = await fetchNewsData(corpName);
                     
-                    // 뉴스가 없는 경우 재시도
+                    // 뉴스가 없는 경우 재시도 (마지막 시도가 아닌 경우에만)
                     if (!newsData.has_news && attempt < maxRetries) {
                         console.log(`⚠️ 뉴스 없음 - 재시도 ${attempt + 1}/${maxRetries}`);
                         lastError = new Error('뉴스를 찾을 수 없음');
                         continue;
                     }
                     
-                    // 성공
-                    renderNewsData(newsData);
-                    if (attempt > 1) {
-                        console.log(`✅ 뉴스 로딩 성공 (${attempt}번째 시도)`);
+                    // 뉴스가 있는 경우에만 성공으로 처리
+                    if (newsData.has_news) {
+                        renderNewsData(newsData);
+                        if (attempt > 1) {
+                            console.log(`✅ 뉴스 로딩 성공 (${attempt}번째 시도)`);
+                        }
+                        return;
                     }
-                    return;
+                    
+                    // 마지막 시도에서도 뉴스가 없으면 실패로 처리
+                    if (attempt === maxRetries) {
+                        lastError = new Error('뉴스를 찾을 수 없음');
+                        break;
+                    }
                     
                 } catch (error) {
                     console.error(`뉴스 로딩 시도 ${attempt} 실패:`, error);
@@ -1399,17 +1409,16 @@
                 }
             }
             
-            // 3번 재시도 후 실패 - 자동 새로고침 시도
+            // 3번 재시도 후 실패 - 자동 새로고침 시도 (사용자에게는 계속 로딩 표시)
             if (allowRefresh) {
                 console.log(`🔄 3번 재시도 실패 - 자동 새로고침 시도`);
-                document.getElementById('newsArticles').innerHTML = 
-                    '<div class="news-item">뉴스 조회 실패 - 자동 새로고침 중...</div>';
+                // 사용자에게는 계속 로딩 중으로 표시 (메시지 변경 없음)
                 
-                // 2초 후 새로고침
+                // 1초 후 자연스럽게 새로고침
                 setTimeout(() => {
-                    console.log(`🔄 자동 새로고침 실행`);
+                    console.log(`🔄 자동 새로고침 실행 (사용자 모르게 진행)`);
                     loadNewsAsync(corpName, 3, false); // 새로고침 후에는 allowRefresh=false
-                }, 2000);
+                }, 1000);
             } else {
                 // 새로고침 후에도 실패
                 console.error(`뉴스 로딩 최종 실패 (새로고침 후에도 실패):`, lastError);
@@ -1489,7 +1498,56 @@
         const chatInput = document.getElementById('chatInput');
         const sendButton = document.getElementById('sendButton');
 
-        function addMessage(role, content) {
+        // 페이지 로드 시 기존 대화 이력 불러오기
+        async function loadChatHistory() {
+            try {
+                const response = await fetch(`http://localhost:5002/api/chat/conversation/${USER_SNO}`);
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.status === 'success' && result.data.conversation.length > 0) {
+                        // 기존 환영 메시지 제거
+                        const messagesContainer = document.getElementById('messagesContainer');
+                        messagesContainer.innerHTML = '';
+                        
+                        // 저장된 대화 이력 복원
+                        for (const msg of result.data.conversation) {
+                            await addMessageWithoutSaving(msg.role, msg.content);
+                        }
+                        console.log(`📚 대화 이력 복원 완료: ${result.data.conversation.length}개 메시지`);
+                    }
+                }
+            } catch (error) {
+                console.warn('대화 이력 로드 실패:', error);
+                // 실패해도 기본 환영 메시지는 유지
+            }
+        }
+
+        // DB 저장 없이 메시지만 추가하는 함수 (이력 복원용)
+        async function addMessageWithoutSaving(role, content) {
+            const messagesContainer = document.getElementById('messagesContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}`;
+
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+            avatar.textContent = role === 'user' ? '나' : 'AI';
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            
+            // AI 응답인 경우 마크다운 스타일 적용
+            if (role === 'assistant') {
+                contentDiv.innerHTML = formatAIResponse(content);
+            } else {
+                contentDiv.textContent = content;
+            }
+            
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(contentDiv);
+            messagesContainer.appendChild(messageDiv);
+        }
+
+        async function addMessage(role, content) {
             const messagesContainer = document.getElementById('messagesContainer');
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${role}`;
@@ -1512,6 +1570,9 @@
             messageDiv.appendChild(contentDiv);
             messagesContainer.appendChild(messageDiv);
             
+            // DB에 채팅 메시지 저장
+            await saveChatMessageToDB(role, content);
+            
             // 스크롤을 맨 아래로 (부드러운 스크롤)
             setTimeout(() => {
                 const chatMessages = document.getElementById('chatMessages');
@@ -1520,6 +1581,44 @@
                     behavior: 'smooth'
                 });
             }, 100);
+        }
+
+        // 채팅 메시지를 DB에 저장하는 함수
+        async function saveChatMessageToDB(role, content) {
+            try {
+                // HTML 태그 제거하여 텍스트만 저장
+                const textContent = typeof content === 'string' 
+                    ? content.replace(/<[^>]*>/g, '').trim()
+                    : content.toString().trim();
+                
+                // 로딩 메시지나 임시 메시지는 저장하지 않음
+                if (textContent.includes('분석 중입니다') || 
+                    textContent.includes('loading-') || 
+                    textContent.length === 0) {
+                    return;
+                }
+
+                const response = await fetch('http://localhost:5002/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        user_sno: USER_SNO,
+                        content: textContent,
+                        role: role
+                    })
+                });
+
+                if (response.ok) {
+                    console.log(`💾 채팅 메시지 DB 저장 성공: ${role}`);
+                } else {
+                    console.warn('채팅 메시지 DB 저장 실패:', response.status);
+                }
+            } catch (error) {
+                console.warn('채팅 메시지 DB 저장 오류:', error);
+                // DB 저장 실패해도 채팅은 계속 진행
+            }
         }
 
         // 🤖 AI 응답 포맷팅 함수 (시각화 지원)
@@ -2274,6 +2373,9 @@
                     window.location.href = 'http://43.203.170.37:8080/';
                 });
             }
+            
+            // 대화 이력 불러오기
+            loadChatHistory();
         });
 
         const currentCorpCode = getCorpCodeFromURL();

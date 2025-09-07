@@ -1,4 +1,13 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page import="com.corpIns.dto.User" %>
+<%
+    // 로그인 체크 - 로그인하지 않은 경우 로그인 페이지로 리다이렉트
+    User loginUser = (User) session.getAttribute("loginUser");
+    if (loginUser == null) {
+        response.sendRedirect(request.getContextPath() + "/login");
+        return;
+    }
+%>
 <html>
 <head>
     <title>기업분석</title>
