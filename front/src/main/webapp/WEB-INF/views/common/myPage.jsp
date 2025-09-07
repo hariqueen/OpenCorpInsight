@@ -118,14 +118,7 @@
 
         <div class="form-group">
             <label class="form-label" for="nickname">닉네임</label>
-            <input type="text" id="nickname" name="nickname" value="<%
-                try {
-                    String nickname = loginUser.getNickname();
-                    out.print(nickname != null ? nickname : "");
-                } catch (Exception e) {
-                    out.print("");
-                }
-            %>">
+            <input type="text" id="nickname" name="nickname" value="" placeholder="닉네임을 입력하세요">
         </div>
 
         <div class="form-group">
@@ -167,6 +160,12 @@
 </div>
 
 <script>
+    // 페이지 로드 시 현재 닉네임 로드
+    document.addEventListener('DOMContentLoaded', function() {
+        // 임시로 비워둠 - 사용자가 직접 입력하도록
+        console.log('프로필 페이지 로드 완료');
+    });
+
     document.getElementById('profileForm').addEventListener('submit', async function(e){
         e.preventDefault();
 
