@@ -74,14 +74,31 @@ class Secrets:
         s = self.get("GPT_API_KEY")
         return s
 
-    def get_gpt_key(self) -> Optional[str]:
+    def get_gemini_key(self) -> Optional[str]:
+        # OPENCORPINSIGHT_SECRETS에서 먼저 확인
         s = self.get("OPENCORPINSIGHT_SECRETS")
         if s:
             try:
                 data = json.loads(s)
                 if isinstance(data, dict):
-                    return data.get("GPT_API_KEY") or data.get("gpt_api_key")
+                    key = data.get("GEMINI_API_KEY") or data.get("gemini_api_key")
+                    if key:
+                        return key
             except Exception:
                 pass
-        s = self.get("GPT_API_KEY")
+        
+        # DART_API_KEY 시크릿에서도 확인 (모든 키가 여기 있음)
+        s = self.get("DART_API_KEY")
+        if s:
+            try:
+                data = json.loads(s)
+                if isinstance(data, dict):
+                    key = data.get("GEMINI_API_KEY") or data.get("gemini_api_key")
+                    if key:
+                        return key
+            except Exception:
+                pass
+        
+        # 개별 시크릿에서 확인
+        s = self.get("GEMINI_API_KEY")
         return s

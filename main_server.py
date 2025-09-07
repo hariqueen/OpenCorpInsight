@@ -21,6 +21,7 @@ try:
     DART_API_KEY = _mcp_secrets.get_dart_key()
     PERPLEXITY_API_KEY = _mcp_secrets.get_perplexity_key()
     GPT_API_KEY = _mcp_secrets.get_gpt_key()
+    GEMINI_API_KEY = _mcp_secrets.get_gemini_key()
     
     print(f"✅ MCP Secrets에서 API 키 로드 성공")
     
@@ -34,6 +35,7 @@ print(f"🔍 API 키 로딩 결과:")
 print(f"   - DART_API_KEY: {'설정됨' if DART_API_KEY else 'None'} ({DART_API_KEY[:10] if DART_API_KEY else 'N/A'}...)")
 print(f"   - PERPLEXITY_API_KEY: {'설정됨' if PERPLEXITY_API_KEY else 'None'} ({PERPLEXITY_API_KEY[:10] if PERPLEXITY_API_KEY else 'N/A'}...)")
 print(f"   - GPT_API_KEY: {'설정됨' if GPT_API_KEY else 'None'} ({GPT_API_KEY[:10] if GPT_API_KEY else 'N/A'}...)")
+print(f"   - GEMINI_API_KEY: {'설정됨' if GEMINI_API_KEY else 'None'} ({GEMINI_API_KEY[:10] if GEMINI_API_KEY else 'N/A'}...)")
 
 # 캐시 시스템 초기화
 CORP_NAME_CACHE = {}
@@ -108,6 +110,7 @@ try:
     print(f"✅ MCP 서비스 초기화 성공")
     print(f"   - DART API Key: {'설정됨' if DART_API_KEY else 'None'}")
     print(f"   - Perplexity API Key: {'설정됨' if PERPLEXITY_API_KEY else 'None'}")
+    print(f"   - Gemini API Key: {'설정됨' if GEMINI_API_KEY else 'None'}")
     print(f"   - GPT API Key: {'설정됨' if GPT_API_KEY else 'None'}")
     
 except Exception as _mcp_init_err:
@@ -362,13 +365,13 @@ def get_financial_data(corp_code: str, year: str = '2023') -> Dict:
         logger.error(f"재무 데이터 조회 오류: {e}")
         raise
 
-def search_news_perplexity(company_name: str, period: str = '3days') -> List[Dict]:
-    """Perplexity API를 통해 뉴스 검색 및 요약만 반환"""
+def search_news_gemini(company_name: str, period: str = '3days') -> List[Dict]:
+    """Gemini API를 통해 뉴스 검색 및 요약 (더 빠른 성능)"""
     print(f"🔍 뉴스 검색 시작: {company_name} ({period})")
-    print(f"   - PERPLEXITY_API_KEY: {'설정됨' if PERPLEXITY_API_KEY else 'None'} ({PERPLEXITY_API_KEY[:20] if PERPLEXITY_API_KEY else 'N/A'}...)")
+    print(f"   - GEMINI_API_KEY: {'설정됨' if GEMINI_API_KEY else 'None'} ({GEMINI_API_KEY[:20] if GEMINI_API_KEY else 'N/A'}...)")
     
-    if not PERPLEXITY_API_KEY:
-        print(f"⚠️ Perplexity API 키 없음 - 샘플 뉴스 데이터 반환")
+    if not GEMINI_API_KEY:
+        print(f"⚠️ Gemini API 키 없음 - 샘플 뉴스 데이터 반환")
         # 샘플 뉴스 데이터 반환
         return [
             {
@@ -401,46 +404,42 @@ def search_news_perplexity(company_name: str, period: str = '3days') -> List[Dic
         period_map = {'day': '지난 24시간', '3days': '지난 3일', 'week': '지난 7일', 'month': '지난 30일'}
         period_text = period_map.get(period, '지난 3일')
         
-        url = "https://api.perplexity.ai/chat/completions"
+        # Gemini API 엔드포인트
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
         headers = {
-            "Authorization": f"Bearer {PERPLEXITY_API_KEY}",
             "Content-Type": "application/json"
         }
         
-        # 최적화된 간결한 프롬프트
-        prompt = f"""
-{company_name} {period_text} 재무/실적 뉴스 5건을 JSON으로 반환:
-
-{{"articles": [{{"title": "제목", "content": "내용(200자)", "summary": "요약(100자)", "published_date": "YYYY-MM-DD", "source": "출처", "url": "링크"}}]}}
-
-재무/실적/투자 관련만 선별하여 반환하세요.
-"""
+        # 간소화된 프롬프트 (속도 우선)
+        prompt = f"{company_name} {period_text} 재무/실적 뉴스 5건을 JSON으로만 반환: {{\"articles\":[{{\"title\":\"\",\"summary\":\"\",\"published_date\":\"\",\"source\":\"\",\"url\":\"\"}}]}}"
         
         data = {
-            "model": "sonar",  # 가장 빠른 기본 모델로 변경
-            "messages": [
-                {"role": "system", "content": "당신은 재무 뉴스 수집 및 요약 전문가입니다. 반드시 JSON만 반환하고, summary는 정확히 3줄로 작성합니다."},
-                {"role": "user", "content": prompt}
-            ],
-            "max_tokens": 1200,  # 토큰 수 감소로 속도 향상
-            "temperature": 0.2
+            "contents": [{
+                "parts": [{
+                    "text": prompt
+                }]
+            }],
+            "generationConfig": {
+                "maxOutputTokens": 800,
+                "temperature": 0.2
+            }
         }
         
         # API 요청
-        print(f"📡 Perplexity API 요청 전송...")
-        response = requests.post(url, headers=headers, json=data, timeout=30)  # 타임아웃 단축
-        print(f"📡 Perplexity API 응답 상태: {response.status_code}")
+        print(f"📡 Gemini API 요청 전송...")
+        response = requests.post(url, headers=headers, json=data, timeout=15)
+        print(f"📡 Gemini API 응답 상태: {response.status_code}")
         # 디버그 로그 제거로 성능 향상
         
         if response.status_code == 200:
             result = response.json()
             
-            # content 추출
-            content = result['choices'][0].get('message', {}).get('content', '')
-            
-            # 만약 content가 없다면 에러 처리
-            if not content:
-                logger.error(f"Perplexity API 응답에 content가 없습니다. 응답 데이터: {json.dumps(result, ensure_ascii=False)}")
+            # Gemini 응답 구조에서 content 추출
+            candidates = result.get('candidates', [])
+            if candidates and 'content' in candidates[0]:
+                content = candidates[0]['content']['parts'][0]['text']
+            else:
+                logger.error(f"Gemini API 응답에 content가 없습니다. 응답 데이터: {json.dumps(result, ensure_ascii=False)}")
                 return []
             
             try:
@@ -452,12 +451,19 @@ def search_news_perplexity(company_name: str, period: str = '3days') -> List[Dic
                     clean_content = clean_content[:-3]  # ``` 제거
                 clean_content = clean_content.strip()
                 
+                # 추가 정리: 불완전한 JSON 수정 시도
+                if not clean_content.endswith('}'):
+                    # JSON이 불완전하면 마지막 완전한 객체까지만 파싱
+                    last_complete = clean_content.rfind('    }')
+                    if last_complete > 0:
+                        clean_content = clean_content[:last_complete + 5] + '\n  ]\n}'
+                
                 # JSON 파싱
                 news_data = json.loads(clean_content)
                 articles = news_data.get('articles', [])
                 
                 if not articles:
-                    logger.error(f"Perplexity API에서 반환된 articles가 비어 있습니다.")
+                    logger.error(f"Gemini API에서 반환된 articles가 비어 있습니다.")
                     return []
                 
                 # 데이터 정제 (대시보드 호환성 유지)
@@ -477,8 +483,8 @@ def search_news_perplexity(company_name: str, period: str = '3days') -> List[Dic
                 return processed_articles
                 
             except json.JSONDecodeError as e:
-                print(f"❌ Perplexity 응답 JSON 파싱 실패: {e}")
-                logger.error(f"Perplexity 응답 JSON 파싱 실패: {e}")
+                print(f"❌ Gemini 응답 JSON 파싱 실패: {e}")
+                logger.error(f"Gemini 응답 JSON 파싱 실패: {e}")
                 
                 # 폴백: MCP 뉴스 클라이언트 사용 시도
                 try:
@@ -520,8 +526,8 @@ def search_news_perplexity(company_name: str, period: str = '3days') -> List[Dic
                 return []  # JSON 파싱 ���패시 빈 리스트 반환
                 
     except Exception as e:
-        print(f"❌ Perplexity API 호출 오류: {e}")
-        logger.error(f"Perplexity API 호출 오류: {e}")
+        print(f"❌ Gemini API 호출 오류: {e}")
+        logger.error(f"Gemini API 호출 오류: {e}")
  
     print(f"❌ 뉴스 검색 실패, 빈 리스트 반환")
     return []
@@ -604,11 +610,11 @@ async def get_news_optimized(company_name: str, period: str = '3days') -> List[D
     print(f"🔍 뉴스 API 호출: {company_name}")
     
     try:
-        # 기존 search_news_perplexity 함수를 비동기로 래핑
+        # Gemini 뉴스 검색 함수를 비동기로 래핑
         loop = asyncio.get_event_loop()
         news_articles = await loop.run_in_executor(
             None,
-            lambda: search_news_perplexity(company_name, period)
+            lambda: search_news_gemini(company_name, period)
         )
         
         # 캐시에 저장
@@ -842,8 +848,17 @@ async def generate_dashboard_data_optimized(corp_code: str, bgn_de: str, end_de:
         asyncio.gather(*financial_tasks)
     )
     
-    # 3. 뉴스 조회 (기업명을 얻은 후)
-    news_articles = await get_news_optimized(corp_name, "3days")
+    # 3. 뉴스 조회 (기업명을 얻은 후) - 빠른 응답을 위해 선택적 실행
+    try:
+        # 뉴스 조회를 더 짧은 타임아웃으로 실행
+        news_task = asyncio.create_task(get_news_optimized(corp_name, "3days"))
+        news_articles = await asyncio.wait_for(news_task, timeout=10.0)  # 10초 타임아웃
+    except asyncio.TimeoutError:
+        print(f"⚠️ 뉴스 조회 타임아웃 (10초), 기본 데이터로 진행")
+        news_articles = []
+    except Exception as e:
+        print(f"⚠️ 뉴스 조회 실패: {e}, 기본 데이터로 진행")
+        news_articles = []
     
     # 데이터 처리
     years_sorted = [str(year) for year in years]
@@ -905,7 +920,7 @@ async def generate_dashboard_data_optimized(corp_code: str, bgn_de: str, end_de:
             } if len(news_articles) > 0 else {'positive_news': 0, 'neutral_news': 0, 'negative_news': 0},
             'message': '최신 뉴스를 성공적으로 가져왔습니다.' if len(news_articles) > 0 else (
                 f'{corp_name}에 대한 최근 뉴스를 찾을 수 없습니다. ' + 
-                ('Perplexity API 키가 설정되지 않았습니다.' if not PERPLEXITY_API_KEY else 'Perplexity API 상태를 확인해주세요.')
+                ('Gemini API 키가 설정되지 않았습니다.' if not GEMINI_API_KEY else 'Gemini API 상태를 확인해주세요.')
             )
         },
         'user_context': user_info,
@@ -938,7 +953,7 @@ def get_company_news(company_name):
     try:
         period = request.args.get('period', '3days')
         limit = min(int(request.args.get('limit', 5)), 5)
-        news_articles = search_news_perplexity(company_name, period)
+        news_articles = search_news_gemini(company_name, period)
         
         return jsonify({
             'status': 'success',
@@ -1855,6 +1870,7 @@ def health_check():
         'services': {
             'dart_api': bool(DART_API_KEY),
             'perplexity_api': bool(PERPLEXITY_API_KEY),
+            'gemini_api': bool(GEMINI_API_KEY),
             'gpt_api': bool(GPT_API_KEY),
             'db_api': 'connected'  # DB API 연결 상태는 별도 체크 가능
         }
@@ -2032,7 +2048,7 @@ def get_company_news_detailed(company_name):
         period = request.args.get('period', '3days')
         limit = min(int(request.args.get('limit', 5)), 5)  # 기본 5개, 최대 5개로 제한
         
-        news_articles = search_news_perplexity(company_name, period)
+        news_articles = search_news_gemini(company_name, period)
         
         return jsonify({
             'status': 'success',
