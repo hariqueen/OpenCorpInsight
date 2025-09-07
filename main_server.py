@@ -43,7 +43,7 @@ FINANCIAL_CACHE = {}
 # 캐시 만료 시간 (초)
 CACHE_EXPIRY = {
     'corp_name': 3600,  # 1시간
-    'news': 1800,       # 30분
+    'news': 7200,       # 2시간 (30분에서 연장)
     'financial': 7200   # 2시간
 }
 
@@ -393,79 +393,30 @@ def search_news_perplexity(company_name: str, period: str = '3days') -> List[Dic
             "Content-Type": "application/json"
         }
         
-        # 대시보드 호환성을 위한 프롬프트 (content와 summary 모두 포함)
+        # 최적화된 간결한 프롬프트
         prompt = f"""
-{company_name}의 {period_text} 재무, 실적, 투자 관련 뉴스 5건을 다음 JSON 형태로만 반환하세요:
+{company_name} {period_text} 재무/실적 뉴스 5건을 JSON으로 반환:
 
-{{
-  "articles": [
-    {{
-      "title": "기사 제목",
-      "content": "기사 전체 내용 (감성분석용)",
-      "summary": "핵심 내용 3줄 요약",
-      "published_date": "YYYY-MM-DD",
-      "source": "언론사명",
-      "url": "기사 URL"
-    }},
-    {{
-      "title": "기사 제목",
-      "content": "기사 전체 내용 (감성분석용)",
-      "summary": "핵심 내용 3줄 요약",
-      "published_date": "YYYY-MM-DD",
-      "source": "언론사명",
-      "url": "기사 URL"
-    }},
-    {{
-      "title": "기사 제목",
-      "content": "기사 전체 내용 (감성분석용)",
-      "summary": "핵심 내용 3줄 요약",
-      "published_date": "YYYY-MM-DD",
-      "source": "언론사명",
-      "url": "기사 URL"
-    }},
-    {{
-      "title": "기사 제목",
-      "content": "기사 전체 내용 (감성분석용)",
-      "summary": "핵심 내용 3줄 요약",
-      "published_date": "YYYY-MM-DD",
-      "source": "언론사명",
-      "url": "기사 URL"
-    }},
-    {{
-      "title": "기사 제목",
-      "content": "기사 전체 내용 (감성분석용)",
-      "summary": "핵심 내용 3줄 요약",
-      "published_date": "YYYY-MM-DD",
-      "source": "언론사명",
-      "url": "기사 URL"
-    }}
-  ]
-}}
+{{"articles": [{{"title": "제목", "content": "내용(200자)", "summary": "요약(100자)", "published_date": "YYYY-MM-DD", "source": "출처", "url": "링크"}}]}}
 
-요구사항:
-1. 반드시 재무/실적/투자 관련 뉴스만 선별
-2. content: 기사 전체 내용 (감성분석용, 200-300자)
-3. summary: 핵심 내용 3줄 요약 (100자 내외)
-4. 모든 텍스트는 JSON 이스케이프 규칙 준수
+재무/실적/투자 관련만 선별하여 반환하세요.
 """
         
         data = {
-            "model": "sonar-pro",
+            "model": "sonar-small-online",  # 더 빠른 모델로 변경
             "messages": [
                 {"role": "system", "content": "당신은 재무 뉴스 수집 및 요약 전문가입니다. 반드시 JSON만 반환하고, summary는 정확히 3줄로 작성합니다."},
                 {"role": "user", "content": prompt}
             ],
-            "max_tokens": 2000,  # content 포함으로 토큰 수 증가
+            "max_tokens": 1200,  # 토큰 수 감소로 속도 향상
             "temperature": 0.2
         }
         
         # API 요청
         print(f"📡 Perplexity API 요청 전송...")
-        response = requests.post(url, headers=headers, json=data, timeout=60)
+        response = requests.post(url, headers=headers, json=data, timeout=30)  # 타임아웃 단축
         print(f"📡 Perplexity API 응답 상태: {response.status_code}")
-        print(f"📡 Perplexity API 응답 길이: {len(response.text)}")
-        print(f"📡 Perplexity API 응답 내용 (처음 500자): {response.text[:500]}")
-        print(f"📡 Perplexity API 응답 내용 (마지막 500자): {response.text[-500:]}")
+        # 디버그 로그 제거로 성능 향상
         
         if response.status_code == 200:
             result = response.json()
@@ -743,32 +694,53 @@ def get_corp_name_from_dart(corp_code: str, year_range: str = None) -> str:
         # 실패 시 기존 XML 방식으로 대체
         return get_corp_name_from_xml(corp_code)
 
+# 전역 기업명 매핑 캐시 (앱 시작시 한 번만 로드)
+_CORP_NAME_MAPPING = {}
+_CORP_NAME_MAPPING_LOADED = False
+
 def get_corp_name_from_xml(corp_code: str) -> str:
-    """기존 XML 방식으로 기업명 조회 (백업용)"""
-    try:
-        zip_url = f'https://opendart.fss.or.kr/api/corpCode.xml?crtfc_key={DART_API_KEY}'
-        response = requests.get(zip_url, timeout=30)
-        
-        with zipfile.ZipFile(io.BytesIO(response.content)) as zf:
-            corp_bytes = zf.read('CORPCODE.xml')
-            try:
-                xml_str = corp_bytes.decode('euc-kr')
-            except UnicodeDecodeError:
-                xml_str = corp_bytes.decode('utf-8')
-        
-        root = ET.fromstring(xml_str)
-        
-        for item in root.findall('.//list'):
-            code = item.find('corp_code').text
-            if code == corp_code:
-                corp_name = item.find('corp_name').text
-                return corp_name
-                
-        return f"기업_{corp_code}"  # 최후의 대체값
-        
-    except Exception as e:
-        logger.error(f"XML에서 기업명 조회 오류: {e}")
-        return f"기업_{corp_code}"
+    """최적화된 기업명 조회 (전역 캐시 사용)"""
+    global _CORP_NAME_MAPPING, _CORP_NAME_MAPPING_LOADED
+    
+    # 캐시에서 먼저 확인
+    if corp_code in _CORP_NAME_MAPPING:
+        return _CORP_NAME_MAPPING[corp_code]
+    
+    # 전역 매핑이 로드되지 않았다면 로드
+    if not _CORP_NAME_MAPPING_LOADED:
+        try:
+            print(f"🔄 기업 코드 매핑 로드 중... (최초 1회만)")
+            zip_url = f'https://opendart.fss.or.kr/api/corpCode.xml?crtfc_key={DART_API_KEY}'
+            response = requests.get(zip_url, timeout=30)
+            
+            with zipfile.ZipFile(io.BytesIO(response.content)) as zf:
+                corp_bytes = zf.read('CORPCODE.xml')
+                try:
+                    xml_str = corp_bytes.decode('euc-kr')
+                except UnicodeDecodeError:
+                    xml_str = corp_bytes.decode('utf-8')
+            
+            root = ET.fromstring(xml_str)
+            
+            # 전체 매핑을 메모리에 로드
+            for item in root.findall('.//list'):
+                code = item.find('corp_code').text
+                name = item.find('corp_name').text
+                if code and name:
+                    _CORP_NAME_MAPPING[code] = name
+            
+            _CORP_NAME_MAPPING_LOADED = True
+            print(f"✅ 기업 코드 매핑 로드 완료: {len(_CORP_NAME_MAPPING)}개 기업")
+            
+        except Exception as e:
+            logger.error(f"XML에서 기업명 매핑 로드 오류: {e}")
+            _CORP_NAME_MAPPING_LOADED = True  # 실패해도 재시도 방지
+    
+    # 로드 후 다시 확인
+    if corp_code in _CORP_NAME_MAPPING:
+        return _CORP_NAME_MAPPING[corp_code]
+    
+    return f"기업_{corp_code}"  # 최후의 대체값
 
 def _mcp_pick_value(rows: List[Dict], patterns: List[str]) -> float:
     for p in patterns:
@@ -849,7 +821,6 @@ async def generate_dashboard_data_optimized(corp_code: str, bgn_de: str, end_de:
     )
     
     # 3. 뉴스 조회 (기업명을 얻은 후)
-    print(f"🔍 뉴스 API 호출: {corp_name}")
     news_articles = await get_news_optimized(corp_name, "3days")
     
     # 데이터 처리

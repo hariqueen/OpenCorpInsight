@@ -224,11 +224,12 @@ class FinancialService:
         """기업의 업종 정보 조회"""
         try:
             # DART API에서 기업 정보 조회
-            j = self.dart.corp_code(corp_code=corp_code)
+            j = self.dart.company(corp_code=corp_code)
             if j.get("status") != "000":
-                return {"ok": False, "error": "기업 정보 조회 실패"}
+                return {"ok": False, "error": f"기업 정보 조회 실패: {j.get('message', 'Unknown error')}"}
             
-            corp_info = j.get("list", [{}])[0] if j.get("list") else {}
+            # company API는 단일 객체를 반환하므로 list 접근 불필요
+            corp_info = j if isinstance(j, dict) else {}
             industry = corp_info.get('induty_code_nm', '제조')  # 업종코드명
             
             # 업종 분류 매핑
