@@ -62,10 +62,24 @@ const searchBtn = document.getElementById('searchBtn');
 // 팝업 열기
 function openSearchPopup() {
     const searchText = mainSearchInput.value.trim();
+    console.log('대시보드 검색 버튼 클릭됨');
+    console.log('검색어:', searchText || '(빈 검색어)');
+    
     let popupUrl = '/compare/compSearchPopUp';
+    
+    // 대시보드 모드임을 명시
+    const params = new URLSearchParams();
+    params.set('mode', 'dashboard');
+    
     if (searchText) {
-        popupUrl += '?searchText=' + encodeURIComponent(searchText);
+        params.set('searchText', searchText);
+        console.log('검색어와 함께 팝업 열기:', popupUrl);
+    } else {
+        console.log('빈 검색어로 팝업 열기:', popupUrl);
     }
+    
+    popupUrl += '?' + params.toString();
+    
     window.open(popupUrl, 'companyPopup', 'width=700,height=800,scrollbars=yes,resizable=yes');
 }
 
@@ -81,6 +95,7 @@ window.onCompanySelected = function(company) {
     console.log('기업명:', company.corp_name);
     console.log('시작연도:', company.start_year);
     console.log('종료연도:', company.end_year);
+    console.log('대시보드로 이동 준비 중...');
 
     try {
         // chatBotDash 페이지로 이동 (기업코드와 연도 정보를 URL 파라미터로 전달)

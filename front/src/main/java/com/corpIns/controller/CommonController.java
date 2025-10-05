@@ -7,7 +7,10 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import jakarta.servlet.http.HttpSession;
 import java.util.HashMap;
@@ -15,6 +18,8 @@ import java.util.Map;
 
 @Controller
 public class CommonController {
+    
+    private static final Logger logger = LoggerFactory.getLogger(CommonController.class);
     
     @Autowired
     private UserMapper userMapper;
@@ -50,6 +55,7 @@ public class CommonController {
     
     @GetMapping("/chatBotDash")
     public String chatBotDash() {
+        System.out.println("DEBUG: chatBotDash 호출됨");
         return "common/chatBotDash"; // /WEB-INF/views/common/chatBotDash.jsp
     }
     
@@ -130,6 +136,34 @@ public class CommonController {
             response.put("message", "프로필 업데이트 중 오류가 발생했습니다: " + e.getMessage());
         }
         
+        return response;
+    }
+    
+    @PostMapping("/api/log")
+    @ResponseBody
+    public Map<String, Object> logMessage(@RequestBody Map<String, Object> logData) {
+        String message = (String) logData.get("message");
+        String company = (String) logData.get("company");
+        Object statusObj = logData.get("status");
+        String status = statusObj != null ? statusObj.toString() : null;
+        String error = (String) logData.get("error");
+        String url = (String) logData.get("url");
+        Object modeObj = logData.get("mode");
+        String mode = modeObj != null ? modeObj.toString() : null;
+        
+        StringBuilder logMsg = new StringBuilder("[프론트엔드 로그] ");
+        logMsg.append(message);
+        
+        if (company != null) logMsg.append(" - 회사: ").append(company);
+        if (mode != null) logMsg.append(" - 모드: ").append(mode);
+        if (status != null) logMsg.append(" - 상태: ").append(status);
+        if (error != null) logMsg.append(" - 오류: ").append(error);
+        if (url != null) logMsg.append(" - URL: ").append(url);
+        
+        logger.info(logMsg.toString());
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("status", "success");
         return response;
     }
 }

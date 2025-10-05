@@ -5,9 +5,10 @@
 
 <mapper namespace="com.corpIns.mapper.UserMapper">
     <select id="selectUserByEmail" parameterType="string" resultType="com.corpIns.dto.User">
-        SELECT user_sno as userSno, email, password_hash as passwordHash
-        FROM users
-        WHERE email = #{email}
+        SELECT u.user_sno as userSno, u.email, u.name, u.password_hash as passwordHash, ud.nickname
+        FROM users u
+        LEFT JOIN user_details ud ON u.user_sno = ud.user_sno
+        WHERE u.email = #{email}
     </select>
 
     <insert id="insertUser" parameterType="map">
@@ -16,5 +17,16 @@
         VALUES
         (#{email}, #{password_hash})
     </insert>
+    
+    <update id="updateUserProfile" parameterType="map">
+        INSERT OR REPLACE INTO user_details (user_sno, nickname, difficulty, interest, purpose)
+        VALUES (#{userSno}, #{nickname}, #{difficulty}, #{interest}, #{purpose})
+    </update>
+    
+    <select id="getUserProfile" parameterType="int" resultType="map">
+        SELECT nickname, difficulty, interest, purpose
+        FROM user_details 
+        WHERE user_sno = #{userSno}
+    </select>
 </mapper>
 

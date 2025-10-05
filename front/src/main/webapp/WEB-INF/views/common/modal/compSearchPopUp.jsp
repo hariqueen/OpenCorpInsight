@@ -88,6 +88,31 @@
             background-color: #f9f9f9;
         }
 
+        /* 로딩 스피너 스타일 */
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-size: 16px;
+        }
+
     </style>
 </head>
 <body>
@@ -133,10 +158,16 @@ function getSearchTextFromURL() {
 // 페이지 로드 시 검색 텍스트 설정
 window.addEventListener('load', function() {
     const searchText = getSearchTextFromURL();
+    // console.log('회사명 찾기 팝업 로드됨');
+    // console.log('URL에서 가져온 검색어:', searchText || '(없음)');
+    
     if (searchText) {
         document.getElementById('popupSearchInput').value = searchText;
+        // console.log('자동 검색 실행 시작:', searchText);
         // 자동으로 검색 실행
         performSearch();
+    } else {
+        // console.log('검색어가 없어서 대기 상태');
     }
 });
 
@@ -144,12 +175,25 @@ window.addEventListener('load', function() {
 async function performSearch() {
     const keyword = document.getElementById("popupSearchInput").value.trim();
     const resultBody = document.getElementById("popupResultBody");
-    resultBody.innerHTML = "";
-
+    
+    // console.log('기업 검색 시작');
+    // console.log('검색 키워드:', keyword || '(빈 검색어)');
+    
     if (!keyword) {
-        resultBody.innerHTML = `<tr><td colspan="4">검색어를 입력해 주세요.</td></tr>`;
+        resultBody.innerHTML = '<tr><td colspan="4">검색어를 입력해 주세요.</td></tr>';
         return;
     }
+    
+    // 서버에 팝업 검색 시작 로그 전송
+    fetch('/api/log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: '팝업창 기업 검색 시작', keyword: keyword })
+    });
+
+    // 로딩 스피너 표시
+    // console.log('로딩 스피너 표시 및 API 호출 시작');
+    resultBody.innerHTML = '<tr><td colspan="4"><div class="loading-text"><div class="loading-spinner"></div>기업 정보를 검색하고 있습니다...</div></td></tr>';
 
     try {
         // Spring Boot 백엔드를 통해 검색
@@ -160,15 +204,47 @@ async function performSearch() {
             end_de: '20240930'
         });
 
-        const resp = await fetch(`${BACKEND_API}?${queryParams}`, {
+        const apiUrl = `${BACKEND_API}?${queryParams}`;
+        
+        // 서버에 API 호출 로그 전송
+        fetch('/api/log', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: '팝업창 API 호출', url: apiUrl, keyword: keyword })
+        });
+        // console.log('검색 파라미터:', {
+        //     q: keyword,
+        //     limit: '10',
+        //     bgn_de: '20230701',
+        //     end_de: '20240930'
+        // });
+
+        const resp = await fetch(apiUrl, {
             method: 'GET',
             headers: { 'Content-Type': 'application/json' }
         });
 
-        if (!resp.ok) throw new Error(`서버 응답 오류: ${resp.status}`);
+        // console.log('API 응답 상태:', resp.status, resp.statusText);
+        
+        // 서버에 API 응답 상태 로그 전송
+        fetch('/api/log', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: '팝업창 API 응답', status: resp.status, keyword: keyword })
+        });
+        
+        if (!resp.ok) {
+            throw new Error('서버 응답 오류: ' + resp.status);
+        }
+        
         const data = await resp.json();
-
-        console.log('API 응답:', data); // 디버깅용
+        
+        // 서버에 API 응답 데이터 로그 전송
+        fetch('/api/log', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: '팝업창 API 응답 데이터 수신', keyword: keyword, dataLength: JSON.stringify(data).length })
+        });
 
         // 응답 구조 확인 및 처리
         let companies = [];
@@ -180,14 +256,24 @@ async function performSearch() {
             companies = data;
         }
 
+        // console.log('파싱된 기업 목록:', companies);
+        // console.log('검색된 기업 수:', companies ? companies.length : 0);
+
         if (!companies || companies.length === 0) {
-            resultBody.innerHTML = `<tr><td colspan="4">검색 결과가 없습니다.</td></tr>`;
+            // console.log('검색 결과 없음');
+            resultBody.innerHTML = '<tr><td colspan="4">검색 결과가 없습니다.</td></tr>';
             return;
         }
 
         // 테이블 채우기
+        // console.log('검색 결과 테이블 생성 시작');
         let html = '';
-        companies.forEach(item => {
+        companies.forEach((item, index) => {
+            // console.log('기업 ' + (index + 1) + ':', {
+            //     corp_code: item.corp_code || item.corpCode,
+            //     corp_name: item.corp_name || item.corpName,
+            //     ceo_name: item.ceo_name || item.ceoName
+            // });
             const corpCode = item.corp_code || item.corpCode || '';
             const corpName = item.corp_name || item.corpName || '';
             const ceoName = item.ceo_name || item.ceoName || '';
@@ -209,10 +295,22 @@ async function performSearch() {
             `;
         });
         resultBody.innerHTML = html;
+        // console.log('검색 결과 테이블 생성 완료:', companies.length + '개 기업');
 
     } catch (err) {
-        console.error("검색 실패:", err);
-        resultBody.innerHTML = `<tr><td colspan="4">오류 발생: ${err.message}</td></tr>`;
+        // 서버에 검색 오류 로그 전송
+        fetch('/api/log', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                message: '기업 검색 실패', 
+                error: err.message,
+                keyword: keyword,
+                url: apiUrl
+            })
+        });
+        
+        resultBody.innerHTML = '<tr><td colspan="4">검색 중 오류가 발생했습니다. 다시 시도해주세요.</td></tr>';
     }
 }
 
@@ -229,15 +327,68 @@ document.getElementById("popupSearchInput").addEventListener("keydown", function
 // 회사 선택
 async function selectCompany(corpCode, corpName, ceoName, businessName, stockCode, listed) {
     try {
-        console.log('=== compSearchPopUp.jsp selectCompany 호출됨 ===');
-        console.log('선택된 기업:', { corpCode, corpName, ceoName, businessName, stockCode, listed });
+        // 서버에 기업 선택 로그 전송
+        fetch('/api/log', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: 'selectCompany 호출됨', company: corpName + ' (' + corpCode + ')' })
+        });
         
-        // 연도 선택 모달 표시
-        showYearSelectionModal(corpCode, corpName, ceoName, businessName, stockCode, listed);
+        // URL 파라미터에서 모드 확인
+        const urlParams = new URLSearchParams(window.location.search);
+        const mode = urlParams.get('mode');
+        const parentUrl = window.opener ? window.opener.location.pathname : '';
+        
+        // 서버에 모드 및 부모 URL 정보 전송
+        fetch('/api/log', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: '모드 및 부모 URL 확인', mode: mode, url: parentUrl })
+        });
+        
+        if (mode === 'compare' || parentUrl === '/compare') {
+            // 기업 비교 모드: 바로 선택 처리 (날짜 선택 없음)
+            fetch('/api/log', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: '기업 비교 모드 - 바로 선택', company: corpName })
+            });
+            
+            if (window.opener && window.opener.onCompanySelected) {
+                window.opener.onCompanySelected({
+                    corp_code: corpCode,
+                    corp_name: corpName,
+                    ceo_name: ceoName,
+                    business_name: businessName,
+                    stock_code: stockCode,
+                    is_listed: listed
+                });
+            }
+            
+            window.close();
+        } else {
+            // 대시보드 모드: 연도 선택 모달 표시
+            fetch('/api/log', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: '대시보드 모드 - 연도 선택', company: corpName })
+            });
+            
+            showYearSelectionModal(corpCode, corpName, ceoName, businessName, stockCode, listed);
+        }
 
     } catch (err) {
-        console.error('데이터 전송 실패:', err);
-        alert('데이터 전송 중 오류가 발생했습니다.');
+        // 서버에 오류 로그 전송
+        fetch('/api/log', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                message: '데이터 전송 실패', 
+                error: err.message,
+                company: corpName,
+                url: window.location.href
+            })
+        });
     }
 }
 
@@ -323,7 +474,7 @@ function confirmYearSelection(corpCode, corpName, ceoName, businessName, stockCo
         const startYear = document.getElementById('startYear').value;
         const endYear = document.getElementById('endYear').value;
         
-        console.log('선택된 연도:', { startYear, endYear });
+        // console.log('선택된 연도:', { startYear, endYear });
         
         // localStorage에 데이터 저장 (백업용)
         const companyData = {
@@ -338,7 +489,7 @@ function confirmYearSelection(corpCode, corpName, ceoName, businessName, stockCo
         };
         
         localStorage.setItem('selectedCompany', JSON.stringify(companyData));
-        console.log('localStorage에 데이터 저장:', companyData);
+        // console.log('localStorage에 데이터 저장:', companyData);
         
         // URL 파라미터 생성
         const queryParams = new URLSearchParams({
@@ -348,19 +499,26 @@ function confirmYearSelection(corpCode, corpName, ceoName, businessName, stockCo
         });
         const targetUrl = `/chatBotDash?${queryParams.toString()}`;
         
-        console.log('대시보드로 이동할 URL:', targetUrl);
+        // 서버에 로그 전송 후 대시보드로 바로 이동 (서버 사이드에서 로그인 체크함)
+        fetch('/api/log', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: '분석 시작', company: corpName, url: targetUrl })
+        });
         
-        // 부모 페이지로 직접 이동 (팝업 차단 문제 해결)
+        // 대시보드로 바로 이동 (서버 사이드에서 로그인 체크 처리)
         if (window.opener) {
-            console.log('부모 페이지로 직접 이동 중...');
             window.opener.location.href = targetUrl;
         } else {
-            console.log('새 창에서 이동 중...');
             window.location.href = targetUrl;
         }
 
-        // 성공 메시지
-        alert(`✅ 분석 시작!\n회사명: ${corpName}\n분석 연도: ${startYear}년 ~ ${endYear}년`);
+        // 서버에 분석 시작 로그 전송
+        fetch('/api/log', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: '분석 시작', company: corpName, url: targetUrl })
+        });
 
         // 모달 닫기
         closeYearModal();
@@ -369,7 +527,7 @@ function confirmYearSelection(corpCode, corpName, ceoName, businessName, stockCo
         window.close();
 
     } catch (err) {
-        console.error('연도 선택 처리 중 오류:', err);
+        // console.error('연도 선택 처리 중 오류:', err);
         alert('연도 선택 처리 중 오류가 발생했습니다.');
     }
 }

@@ -272,6 +272,17 @@
            color: #ffd700;
        }
 
+       .loading-spinner {
+           color: #888;
+           font-size: 14px;
+           animation: pulse 1.5s infinite;
+       }
+
+       @keyframes pulse {
+           0%, 100% { opacity: 0.5; }
+           50% { opacity: 1; }
+       }
+
        /* 반응형 */
        @media (max-width: 768px) {
            .companies-header {
@@ -316,8 +327,8 @@
         </div>
 
         <div class="companies-header">
-            <div class="company-name company-left" id="company1Name">삼성전자</div>
-            <div class="company-name company-right" id="company2Name">LG</div>
+            <div class="company-name company-left" id="company1Name"></div>
+            <div class="company-name company-right" id="company2Name"></div>
         </div>
 
         <div class="comparison-grid">
@@ -417,19 +428,27 @@
             <div class="summary-stats">
                 <div class="summary-item">
                     <div class="label">매출 우위</div>
-                    <div class="value winner" id="revenueWinner">삼성전자</div>
+                    <div class="value winner" id="revenueWinner">
+                        <div class="loading-spinner" id="revenueLoading">분석중...</div>
+                    </div>
                 </div>
                 <div class="summary-item">
                     <div class="label">수익성 우위</div>
-                    <div class="value winner" id="profitWinner">삼성전자</div>
+                    <div class="value winner" id="profitWinner">
+                        <div class="loading-spinner" id="profitLoading">분석중...</div>
+                    </div>
                 </div>
                 <div class="summary-item">
                     <div class="label">자산 규모</div>
-                    <div class="value winner" id="assetWinner">삼성전자</div>
+                    <div class="value winner" id="assetWinner">
+                        <div class="loading-spinner" id="assetLoading">분석중...</div>
+                    </div>
                 </div>
                 <div class="summary-item">
                     <div class="label">안정성 우위</div>
-                    <div class="value winner" id="stabilityWinner">LG</div>
+                    <div class="value winner" id="stabilityWinner">
+                        <div class="loading-spinner" id="stabilityLoading">분석중...</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -471,8 +490,8 @@
         // 기본 데이터 (실제로는 API에서 받아옴)
         const comparisonData = {
             "comparison_info": {
-                "company1": {"corp_name": selectedCompanies.company1.corp_name || "기업1"},
-                "company2": {"corp_name": selectedCompanies.company2.corp_name || "기업2"}
+                "company1": {"corp_name": selectedCompanies.company1.corp_name},
+                "company2": {"corp_name": selectedCompanies.company2.corp_name}
             },
             "basic_financial_comparison": {
                 "company1": {
@@ -499,9 +518,9 @@
                 }
             },
             "comparison_summary": {
-                "revenue_comparison": {"winner": selectedCompanies.company1.corp_name || "기업1"},
-                "profitability_comparison": {"winner": selectedCompanies.company1.corp_name || "기업1"},
-                "asset_comparison": {"winner": selectedCompanies.company1.corp_name || "기업1"}
+                "revenue_comparison": {"winner": selectedCompanies.company1.corp_name},
+                "profitability_comparison": {"winner": selectedCompanies.company1.corp_name},
+                "asset_comparison": {"winner": selectedCompanies.company1.corp_name}
             }
         };
 
@@ -549,16 +568,155 @@
             // 우위 표시
             highlightWinners(data);
 
-            // 요약 업데이트
-            document.getElementById('revenueWinner').textContent = data.comparison_summary.revenue_comparison.winner;
-            document.getElementById('profitWinner').textContent = data.comparison_summary.profitability_comparison.winner;
-            document.getElementById('assetWinner').textContent = data.comparison_summary.asset_comparison.winner;
+            // 요약 업데이트 - 실제 API 응답 구조에 맞게 수정
+            updateComparisonSummary(data);
+        }
 
-            // 안정성은 부채비율이 낮은 쪽이 우위
-            const stabilityWinner = indicators.stability.company1['부채비율'] < indicators.stability.company2['부채비율']
-                ? data.comparison_info.company1.corp_name
-                : data.comparison_info.company2.corp_name;
-            document.getElementById('stabilityWinner').textContent = stabilityWinner;
+        function updateComparisonSummary(data) {
+            try {
+                const basic = data.basic_financial_comparison || {};
+                const indicators = data.financial_indicators_comparison || {};
+                const companyNames = [
+                    data.comparison_info?.company1?.corp_name || data.basic_info?.company1?.name,
+                    data.comparison_info?.company2?.corp_name || data.basic_info?.company2?.name
+                ];
+
+                // 매출 우위 (매출액 기준)
+                let revenueWinner = '-';
+                if (basic.company1?.revenue && basic.company2?.revenue) {
+                    revenueWinner = basic.company1.revenue > basic.company2.revenue ? companyNames[0] : companyNames[1];
+                }
+                document.getElementById('revenueWinner').textContent = revenueWinner;
+
+                // 수익성 우위 (ROE 기준)
+                let profitWinner = '-';
+                if (indicators.profitability?.company1?.ROE && indicators.profitability?.company2?.ROE) {
+                    profitWinner = indicators.profitability.company1.ROE > indicators.profitability.company2.ROE ? companyNames[0] : companyNames[1];
+                }
+                document.getElementById('profitWinner').textContent = profitWinner;
+
+                // 자산 규모 (총자산 기준)
+                let assetWinner = '-';
+                if (basic.company1?.total_assets && basic.company2?.total_assets) {
+                    assetWinner = basic.company1.total_assets > basic.company2.total_assets ? companyNames[0] : companyNames[1];
+                }
+                document.getElementById('assetWinner').textContent = assetWinner;
+
+                // 안정성 우위 (부채비율 기준 - 낮을수록 좋음)
+                let stabilityWinner = '-';
+                if (indicators.stability?.company1?.['부채비율'] && indicators.stability?.company2?.['부채비율']) {
+                    stabilityWinner = indicators.stability.company1['부채비율'] < indicators.stability.company2['부채비율'] ? companyNames[0] : companyNames[1];
+                }
+                document.getElementById('stabilityWinner').textContent = stabilityWinner;
+
+            } catch (error) {
+                console.error('비교 요약 업데이트 오류:', error);
+                // 오류 시 기본값으로 설정
+                document.getElementById('revenueWinner').textContent = '-';
+                document.getElementById('profitWinner').textContent = '-';
+                document.getElementById('assetWinner').textContent = '-';
+                document.getElementById('stabilityWinner').textContent = '-';
+            }
+        }
+
+        function updateComparisonSummaryFromAPI(comparisonData) {
+            try {
+                console.log('API 응답으로 비교 요약 업데이트:', comparisonData);
+                
+                const financialComparison = comparisonData.financial_comparison || {};
+                const detailedRatios = comparisonData.detailed_ratios || {};
+                const basicInfo = comparisonData.basic_info || {};
+                
+                const companyNames = [
+                    basicInfo.company1?.name,
+                    basicInfo.company2?.name
+                ];
+
+                // 매출 우위 (financial_comparison에서 매출액 비교)
+                let revenueWinner = '-';
+                const corp1Data = financialComparison[basicInfo.company1?.corp_code] || {};
+                const corp2Data = financialComparison[basicInfo.company2?.corp_code] || {};
+                
+                if (corp1Data.매출액 && corp2Data.매출액) {
+                    revenueWinner = corp1Data.매출액 > corp2Data.매출액 ? companyNames[0] : companyNames[1];
+                } else if (corp1Data.매출액 && !corp2Data.매출액) {
+                    revenueWinner = companyNames[0];
+                } else if (!corp1Data.매출액 && corp2Data.매출액) {
+                    revenueWinner = companyNames[1];
+                }
+                
+                // 로딩 제거하고 결과 표시
+                const revenueElement = document.getElementById('revenueWinner');
+                const revenueLoading = document.getElementById('revenueLoading');
+                if (revenueLoading) revenueLoading.remove();
+                revenueElement.textContent = revenueWinner;
+
+                // 수익성 우위 (영업이익률 또는 ROE 비교)
+                let profitWinner = '-';
+                
+                // 1순위: 영업이익률(OPM) 비교
+                if (detailedRatios.company1?.OPM && detailedRatios.company2?.OPM) {
+                    profitWinner = detailedRatios.company1.OPM > detailedRatios.company2.OPM ? companyNames[0] : companyNames[1];
+                } else if (detailedRatios.company1?.OPM && !detailedRatios.company2?.OPM) {
+                    profitWinner = companyNames[0];
+                } else if (!detailedRatios.company1?.OPM && detailedRatios.company2?.OPM) {
+                    profitWinner = companyNames[1];
+                }
+                // 2순위: ROE 비교 (영업이익률이 없을 경우)
+                else if (detailedRatios.company1?.ROE && detailedRatios.company2?.ROE) {
+                    profitWinner = detailedRatios.company1.ROE > detailedRatios.company2.ROE ? companyNames[0] : companyNames[1];
+                } else if (detailedRatios.company1?.ROE && !detailedRatios.company2?.ROE) {
+                    profitWinner = companyNames[0];
+                } else if (!detailedRatios.company1?.ROE && detailedRatios.company2?.ROE) {
+                    profitWinner = companyNames[1];
+                }
+                
+                // 로딩 제거하고 결과 표시
+                const profitElement = document.getElementById('profitWinner');
+                const profitLoading = document.getElementById('profitLoading');
+                if (profitLoading) profitLoading.remove();
+                profitElement.textContent = profitWinner;
+
+                // 자산 규모 - API에서 총자산 데이터가 없으므로 매출액으로 대체
+                let assetWinner = '-';
+                if (corp1Data.매출액 && corp2Data.매출액) {
+                    assetWinner = corp1Data.매출액 > corp2Data.매출액 ? companyNames[0] : companyNames[1];
+                } else if (corp1Data.매출액 && !corp2Data.매출액) {
+                    assetWinner = companyNames[0];
+                } else if (!corp1Data.매출액 && corp2Data.매출액) {
+                    assetWinner = companyNames[1];
+                }
+                
+                // 로딩 제거하고 결과 표시
+                const assetElement = document.getElementById('assetWinner');
+                const assetLoading = document.getElementById('assetLoading');
+                if (assetLoading) assetLoading.remove();
+                assetElement.textContent = assetWinner;
+
+                // 안정성 우위 (detailed_ratios에서 부채비율 비교 - 낮을수록 좋음)
+                let stabilityWinner = '-';
+                if (detailedRatios.company1?.부채비율 && detailedRatios.company2?.부채비율) {
+                    stabilityWinner = detailedRatios.company1.부채비율 < detailedRatios.company2.부채비율 ? companyNames[0] : companyNames[1];
+                }
+                
+                // 로딩 제거하고 결과 표시
+                const stabilityElement = document.getElementById('stabilityWinner');
+                const stabilityLoading = document.getElementById('stabilityLoading');
+                if (stabilityLoading) stabilityLoading.remove();
+                stabilityElement.textContent = stabilityWinner;
+
+                console.log('비교 요약 업데이트 완료:', {
+                    revenueWinner, profitWinner, assetWinner, stabilityWinner
+                });
+
+            } catch (error) {
+                console.error('API 비교 요약 업데이트 오류:', error);
+                // 오류 시 기본값으로 설정
+                document.getElementById('revenueWinner').textContent = '-';
+                document.getElementById('profitWinner').textContent = '-';
+                document.getElementById('assetWinner').textContent = '-';
+                document.getElementById('stabilityWinner').textContent = '-';
+            }
         }
 
         function highlightWinners(data) {
@@ -629,30 +787,253 @@
             alert('AI 채팅을 시작합니다.');
         }
 
-        // Flask 백엔드에서 실제 기업 데이터 가져오기
+        // 기업 비교 데이터 로드 (localStorage 우선, 실패 시 API 호출)
         async function loadRealCompanyData() {
             try {
-                console.log('실제 기업 데이터를 가져오는 중...');
+                console.log('기업 비교 데이터를 가져오는 중...');
                 
-                // 두 기업의 대시보드 데이터를 가져오기 (환경에 따라 자동 선택)
-                const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-                    ? 'http://localhost:5001' 
-                    : 'http://43.203.170.37:5001';
-                const [company1Data, company2Data] = await Promise.all([
-                    fetch(`${API_BASE_URL}/api/dashboard/${selectedCompanies.company1.corp_code}?start_year=2020&end_year=2023`),
-                    fetch(`${API_BASE_URL}/api/dashboard/${selectedCompanies.company2.corp_code}?start_year=2020&end_year=2023`)
-                ]);
+                // 이전 캐시 정리 (기업 코드별 키가 아닌 이전 방식의 캐시)
+                const oldCache = localStorage.getItem('comparisonResult');
+                if (oldCache) {
+                    console.log('이전 캐시 제거');
+                    localStorage.removeItem('comparisonResult');
+                }
+                
+                // 1. localStorage에서 비교 결과 확인 (기업 코드별로 구분)
+                const comparisonKey = `comparisonResult_${selectedCompanies.company1.corp_code}_${selectedCompanies.company2.corp_code}`;
+                const storedComparison = localStorage.getItem(comparisonKey);
+                if (storedComparison) {
+                    try {
+                        const comparisonData = JSON.parse(storedComparison);
+                        console.log('✅ localStorage에서 비교 데이터 로드:', comparisonData);
+                        
+                        // 저장된 데이터의 기업 코드가 현재 선택된 기업과 일치하는지 확인
+                        const storedCorp1 = comparisonData.basic_info?.company1?.corp_code;
+                        const storedCorp2 = comparisonData.basic_info?.company2?.corp_code;
+                        
+                        if (storedCorp1 === selectedCompanies.company1.corp_code && 
+                            storedCorp2 === selectedCompanies.company2.corp_code) {
+                            // 비교 데이터를 화면에 표시
+                            displayComparisonResults(comparisonData);
+                            return;
+                        } else {
+                            console.log('⚠️ 저장된 데이터의 기업 코드가 현재 선택과 다름, 새로 로드');
+                            localStorage.removeItem(comparisonKey);
+                        }
+                    } catch (e) {
+                        console.warn('⚠️ localStorage 데이터 파싱 실패:', e);
+                        localStorage.removeItem(comparisonKey);
+                    }
+                }
+                
+                // 2. localStorage에 데이터가 없으면 API 호출
+                console.log('localStorage에 데이터가 없어 API 호출 시작');
+                
+                // 동적 환경 설정 로드
+                let API_BASE_URL = 'http://localhost:5001'; // 기본값
+                
+                try {
+                    const configUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+                        ? 'http://localhost:5001/api/config' 
+                        : `http://${window.location.hostname}:5001/api/config`;
+                        
+                    const configResponse = await fetch(configUrl);
+                    if (configResponse.ok) {
+                        const configResult = await configResponse.json();
+                        if (configResult.status === 'success') {
+                            API_BASE_URL = configResult.data.api_base_url;
+                            console.log('환경 설정 로드 성공:', configResult.data);
+                        }
+                    }
+                } catch (error) {
+                    console.warn('환경 설정 로드 실패, 기본값 사용:', error);
+                    // 폴백: 기존 로직 사용
+                    API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+                        ? 'http://localhost:5001' 
+                        : 'http://43.203.170.37:5001';
+                }
+                
+                // 기업 비교 API 호출
+                const response = await fetch(`${API_BASE_URL}/api/compare-companies`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        corp_codes: [selectedCompanies.company1.corp_code, selectedCompanies.company2.corp_code],
+                        company_names: [selectedCompanies.company1.corp_name, selectedCompanies.company2.corp_name]
+                    })
+                });
 
-                if (!company1Data.ok || !company2Data.ok) {
-                    throw new Error('대시보드 데이터를 가져올 수 없습니다.');
+                if (!response.ok) {
+                    throw new Error('기업 비교 데이터를 가져올 수 없습니다.');
                 }
 
-                const [response1, response2] = await Promise.all([
-                    company1Data.json(),
-                    company2Data.json()
-                ]);
+                const comparisonData = await response.json();
+                console.log('API에서 비교 데이터 로드:', comparisonData);
+                
+                // 비교 데이터를 화면에 표시
+                displayComparisonResults(comparisonData);
 
-                console.log('가져온 대시보드 데이터 응답:', { response1, response2 });
+            } catch (error) {
+                console.error('기업 비교 데이터 로드 실패:', error);
+                alert('기업 비교 데이터를 불러오는 중 오류가 발생했습니다.');
+            }
+        }
+
+        // 비교 결과를 화면에 표시하는 함수
+        function displayComparisonResults(comparisonData) {
+            try {
+                console.log('비교 결과 화면 표시 시작:', comparisonData);
+                
+                const basicInfo = comparisonData.basic_info || {};
+                const financialComparison = comparisonData.financial_comparison || {};
+                const detailedRatios = comparisonData.detailed_ratios || {};
+                const investmentGrades = comparisonData.investment_grades || {};
+                const comparisonSummary = comparisonData.comparison_summary || {};
+                
+                // 기업 기본 정보 업데이트
+                updateCompanyBasicInfo(basicInfo);
+                
+                // 재무 비교 차트 업데이트
+                updateFinancialComparisonCharts(financialComparison, detailedRatios);
+                
+                // 투자 등급 표시
+                updateInvestmentGrades(investmentGrades);
+                
+                // 비교 요약 표시
+                updateComparisonSummaryFromAPI(comparisonData);
+                
+                console.log('비교 결과 화면 표시 완료');
+                
+            } catch (error) {
+                console.error('비교 결과 표시 중 오류:', error);
+            }
+        }
+
+        // 기업 기본 정보 업데이트
+        function updateCompanyBasicInfo(basicInfo) {
+            try {
+                // 기업명 업데이트
+                const company1Name = basicInfo.company1?.name || selectedCompanies.company1.corp_name;
+                const company2Name = basicInfo.company2?.name || selectedCompanies.company2.corp_name;
+                
+                // 페이지 제목 업데이트
+                document.title = company1Name + ' vs ' + company2Name + ' - 기업 비교 분석';
+                
+                // 화면의 기업명 직접 업데이트
+                const company1Element = document.getElementById('company1Name');
+                const company2Element = document.getElementById('company2Name');
+                
+                if (company1Element) {
+                    company1Element.textContent = company1Name;
+                }
+                if (company2Element) {
+                    company2Element.textContent = company2Name;
+                }
+                
+                console.log('기업 기본 정보 업데이트 완료:', { company1Name, company2Name });
+                
+            } catch (error) {
+                console.error('기업 기본 정보 업데이트 실패:', error);
+            }
+        }
+
+        // 재무 비교 차트 업데이트
+        function updateFinancialComparisonCharts(financialComparison, detailedRatios) {
+            try {
+                console.log('재무 비교 차트 업데이트:', { financialComparison, detailedRatios });
+                
+                // 기존 차트 업데이트 로직을 새로운 데이터로 교체
+                const company1Data = detailedRatios.company1 || {};
+                const company2Data = detailedRatios.company2 || {};
+                
+                // 차트 데이터 구성
+                const chartData = {
+                    company1: {
+                        name: selectedCompanies.company1.corp_name,
+                        data: company1Data
+                    },
+                    company2: {
+                        name: selectedCompanies.company2.corp_name,
+                        data: company2Data
+                    }
+                };
+                
+                // 기존 차트 업데이트 함수 호출 (있다면)
+                if (typeof updateChartsWithNewData === 'function') {
+                    updateChartsWithNewData(chartData);
+                } else {
+                    console.log('차트 업데이트 함수가 없어 데이터만 로그 출력:', chartData);
+                }
+                
+            } catch (error) {
+                console.error('재무 비교 차트 업데이트 실패:', error);
+            }
+        }
+
+        // 투자 등급 표시
+        function updateInvestmentGrades(investmentGrades) {
+            try {
+                const company1Grade = investmentGrades.company1?.grade || {};
+                const company2Grade = investmentGrades.company2?.grade || {};
+                
+                console.log('투자 등급 업데이트:', { company1Grade, company2Grade });
+                
+                // 투자 등급 표시 영역이 있다면 업데이트
+                const gradeElements = document.querySelectorAll('.investment-grade, .grade-display');
+                if (gradeElements.length > 0) {
+                    gradeElements.forEach((el, index) => {
+                        const grade = index === 0 ? company1Grade : company2Grade;
+                        if (grade.grade) {
+                            el.textContent = `투자등급: ${grade.grade} (${grade.score}점)`;
+                            el.style.color = grade.color || '#333';
+                        }
+                    });
+                }
+                
+            } catch (error) {
+                console.error('투자 등급 표시 실패:', error);
+            }
+        }
+
+        // 비교 요약 표시
+        function updateComparisonSummary(comparisonSummary, basicInfo) {
+            try {
+                console.log('비교 요약 표시:', comparisonSummary);
+                
+                const winnerCategories = comparisonSummary.winner_categories || {};
+                const overallWinner = comparisonSummary.overall_winner;
+                const keyInsights = comparisonSummary.key_insights || [];
+                
+                // 전체 승자 표시
+                if (overallWinner && overallWinner !== 'tie') {
+                    const winnerName = overallWinner === 'company1' 
+                        ? basicInfo.company1?.name || selectedCompanies.company1.corp_name
+                        : basicInfo.company2?.name || selectedCompanies.company2.corp_name;
+                    
+                    console.log(`전체 승자: ${winnerName}`);
+                }
+                
+                // 카테고리별 승자 표시
+                Object.entries(winnerCategories).forEach(([category, data]) => {
+                    console.log(`${category}: ${data.winner} (${data.company1_value} vs ${data.company2_value})`);
+                });
+                
+                // 핵심 인사이트 표시
+                keyInsights.forEach((insight, index) => {
+                    console.log(`인사이트 ${index + 1}: ${insight}`);
+                });
+                
+            } catch (error) {
+                console.error('비교 요약 표시 실패:', error);
+            }
+        }
+
+        // 기존 코드와의 호환성을 위한 더미 함수
+        function loadOldComparisonData() {
+            try {
+                console.log('기존 비교 데이터 로드 (호환성)');
 
                 // API 응답에서 financial_data 추출 (대시보드 응답 구조에 맞게)
                 const data1 = response1.financial_data || response1.data?.financial_data || response1;
@@ -712,9 +1093,35 @@
 
         // 페이지 로드 시 데이터 업데이트
         window.onload = function() {
+            // 즉시 URL 파라미터에서 기업명 표시
+            updateCompanyNamesFromURL();
+            
             // 실제 데이터 로드 시도, 실패시 기본 데이터 사용
             loadRealCompanyData();
         };
+
+        // URL 파라미터에서 기업명을 즉시 표시하는 함수
+        function updateCompanyNamesFromURL() {
+            const company1Name = selectedCompanies.company1.corp_name;
+            const company2Name = selectedCompanies.company2.corp_name;
+            
+            if (company1Name && company2Name) {
+                const company1Element = document.getElementById('company1Name');
+                const company2Element = document.getElementById('company2Name');
+                
+                if (company1Element) {
+                    company1Element.textContent = company1Name;
+                }
+                if (company2Element) {
+                    company2Element.textContent = company2Name;
+                }
+                
+                // 페이지 제목도 업데이트
+                document.title = company1Name + ' vs ' + company2Name + ' - 기업 비교 분석';
+                
+                console.log('URL에서 기업명 즉시 표시:', { company1Name, company2Name });
+            }
+        }
 
         // 실제 API 데이터로 업데이트하는 함수
         function loadComparisonData(apiData) {

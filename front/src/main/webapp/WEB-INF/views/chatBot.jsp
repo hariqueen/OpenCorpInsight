@@ -392,9 +392,36 @@
         var userSnoValue = parseInt('<%= userSno %>');
         var userNicknameValue = '<%= userNickname != null ? userNickname : "웹사용자" %>';
         
-        const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-            ? 'http://localhost:5001' 
-            : 'http://43.203.170.37:5001'; // 환경에 따라 자동 선택
+        // 동적 환경 설정 로드
+        let API_BASE_URL = 'http://localhost:5001'; // 기본값
+        
+        // 서버에서 환경 설정 가져오기
+        async function loadConfig() {
+            try {
+                const configUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+                    ? 'http://localhost:5001/api/config' 
+                    : `http://${window.location.hostname}:5001/api/config`;
+                    
+                const response = await fetch(configUrl);
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.status === 'success') {
+                        API_BASE_URL = result.data.api_base_url;
+                        console.log('✅ 환경 설정 로드 성공:', result.data);
+                        return result.data;
+                    }
+                }
+            } catch (error) {
+                console.warn('⚠️ 환경 설정 로드 실패, 기본값 사용:', error);
+            }
+            
+            // 폴백: 기존 로직 사용
+            API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+                ? 'http://localhost:5001' 
+                : 'http://43.203.170.37:5001';
+            
+            return null;
+        }
         const USER_SNO = userSnoValue;
         const USER_NICKNAME = userNicknameValue;
     const chatMessages = document.getElementById('chatMessages');
@@ -752,11 +779,22 @@
         window.location.href = dashboardUrl;
     }
 
-    console.log('🤖 독립 챗봇 페이지 초기화 완료');
-    console.log(`🌐 API 서버: ${API_BASE_URL}`);
+    // 페이지 초기화
+    async function initializePage() {
+        console.log('🤖 독립 챗봇 페이지 초기화 시작');
+        
+        // 환경 설정 로드
+        await loadConfig();
+        console.log(`🌐 API 서버: ${API_BASE_URL}`);
+        
+        // 페이지 로드 시 기업 검색 리다이렉트 체크
+        checkForCompanyRedirect();
+        
+        console.log('🤖 독립 챗봇 페이지 초기화 완료');
+    }
     
-    // 페이지 로드 시 기업 검색 리다이렉트 체크
-    checkForCompanyRedirect();
+    // 페이지 로드 시 초기화 실행
+    initializePage();
 </script>
 </body>
 </html>

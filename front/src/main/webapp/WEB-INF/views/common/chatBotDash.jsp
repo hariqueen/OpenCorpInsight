@@ -854,7 +854,7 @@
                             • 투자 조언 및 리스크 평가<br><br>
                             <strong>💡 질문 예시:</strong><br>
                             • "신세계의 2024년도 재무비율 조회해줘"<br>
-                            • "삼성전자와 SK하이닉스 비교해줘"<br>
+                            • "신세계와 롯데쇼핑 비교해줘"<br>
                             • "이 기업의 투자 리스크는?"
                         </div>
                     </div>
@@ -883,15 +883,41 @@
         var userSnoValue = parseInt('<%= userSno %>');
         var userNicknameValue = '<%= userNickname != null ? userNickname : "웹사용자" %>';
         
-        // 🔧 Flask 서버 연동 설정
-        const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-            ? 'http://localhost:5001' 
-            : 'http://43.203.170.37:5001'; // 환경에 따라 자동 선택
+        // 🔧 동적 환경 설정
+        let API_BASE_URL = 'http://localhost:5001'; // 기본값
+        let DB_BASE_URL = 'http://localhost:5002'; // 기본값
+        
+        // 서버에서 환경 설정 가져오기
+        async function loadConfig() {
+            try {
+                const configUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+                    ? 'http://localhost:5001/api/config' 
+                    : `http://${window.location.hostname}:5001/api/config`;
+                    
+                const response = await fetch(configUrl);
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.status === 'success') {
+                        API_BASE_URL = result.data.api_base_url;
+                        DB_BASE_URL = result.data.db_base_url;
+                        console.log('✅ 환경 설정 로드 성공:', result.data);
+                        return result.data;
+                    }
+                }
+            } catch (error) {
+                console.warn('⚠️ 환경 설정 로드 실패, 기본값 사용:', error);
+            }
             
-        // 🔧 DB 서버 연동 설정 (별도 DB 서버)
-        const DB_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-            ? 'http://localhost:5002' 
-            : 'http://43.203.170.37:5002'; // DB 전용 서버
+            // 폴백: 기존 로직 사용
+            API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+                ? 'http://localhost:5001' 
+                : 'http://43.203.170.37:5001';
+            DB_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+                ? 'http://localhost:5002' 
+                : 'http://43.203.170.37:5002';
+            
+            return null;
+        }
         const USER_SNO = userSnoValue;
         const USER_NICKNAME = userNicknameValue;
         
@@ -1940,61 +1966,6 @@
             this.style.height = Math.min(this.scrollHeight, 100) + 'px';
         });
 
-        // 🔧 초기화 (테스트용 샘플 데이터)
-        const sampleData = {
-            "company_info": {
-                "analysis_period": "2020-2023",
-                "corp_code": "00126380",
-                "corp_name": "삼성전자",
-                "latest_year": "2023"
-            },
-            "financial_summary": {
-                "net_profit": 15487100000000,
-                "operating_profit": 6566976000000,
-                "revenue": 258935494000000,
-                "total_assets": 455905980000000,
-                "total_debt": 92228115000000,
-                "total_equity": 363677865000000
-            },
-            "news_data": {
-                "articles": [
-                    {
-                        "id": 1,
-                        "published_date": "2025-07-31",
-                        "source": "더렉",
-                        "summary": "삼성전자는 2025년 2분기 매출 74조5700억원, 영업이익 4조6800억원을 기록했다. 매출은 전년 동기 대비 0.7% 증가했으나, 영업이익은 55.2% 감소했다.",
-                        "title": "삼성전자 2025년 2분기 실적발표 컨퍼런스콜 전문"
-                    },
-                    {
-                        "id": 2,
-                        "published_date": "2025-07-07",
-                        "source": "뉴스1",
-                        "summary": "삼성전자 주가는 2분기 실적 발표를 앞두고 1.42% 하락했다. 투자자들은 실적에 대한 불확실성으로 매도세를 보였다.",
-                        "title": "삼성전자, 2분기 실적 발표 앞두고 1%대 하락[핫종목]"
-                    },
-                    {
-                        "id": 3,
-                        "published_date": "2025-07-10",
-                        "source": "줌인베스트",
-                        "summary": "삼성전자 주가는 애플과의 칩 수주 소식으로 1.84% 상승했다. 2분기 실적 개선 기대감이 투자 심리에 긍정적으로 작용했다.",
-                        "title": "삼성전자, 애플과의 칩 수주 소식에 1.84% 상승"
-                    }
-                ],
-                "has_news": true,
-                "summary_stats": {
-                    "negative_news": 1,
-                    "neutral_news": 1,
-                    "positive_news": 1
-                },
-                "total_articles": 3
-            },
-            "yearly_trends": {
-                "net_profit": [26407832000000, 39907450000000, 55654077000000, 15487100000000],
-                "operating_profit": [35993876000000, 51633856000000, 43376630000000, 6566976000000],
-                "revenue": [236806988000000, 279604799000000, 302231360000000, 258935494000000],
-                "years": ["2020", "2021", "2022", "2023"]
-            }
-        };
 
         // 🔍 URL 파라미터에서 기업코드와 연도 정보 가져오기
         function getCorpCodeFromURL() {
@@ -2115,8 +2086,8 @@
                     <div class="news-item">
                         <div class="news-title">📊 기업 데이터를 기다리는 중...</div>
                         <div class="news-summary">
-                            URL에 ?corpCode=00126380 (삼성전자) 형태로 기업코드를 추가해주세요.<br>
-                            예시: /chatBotDash?corpCode=00126380
+                            URL에 ?corpCode=기업코드 형태로 기업코드를 추가해주세요.<br>
+                            예시: /chatBotDash?corpCode=00136378
                         </div>
                     </div>
                 `;
@@ -2126,12 +2097,6 @@
             document.getElementById('dashboard').style.display = 'block';
         }
 
-        // 🌟 디버깅용 헬퍼 함수들 (개발 중 콘솔에서 테스트 가능)
-        window.testDashboard = function(corpCode = '00126380') {
-            console.log(`테스트: ${corpCode} 대시보드 표시`);
-            const currentYear = new Date().getFullYear().toString();
-            displayDashboard(corpCode, '2020', currentYear);
-        };
 
         // 고급 차트 데이터 로드
         async function loadAdvancedCharts(corpCode, year) {
@@ -2382,15 +2347,6 @@
             });
         }
 
-        window.testChat = function(message = '이 회사 어떤가요?') {
-            console.log(`테스트 채팅: ${message}`);
-            addMessage('user', message);
-            sendChatMessage(message).then(response => {
-                addMessage('assistant', response);
-            }).catch(error => {
-                addMessage('assistant', `테스트 실패: ${error.message}`);
-            });
-        };
 
         // 🌐 외부 연동용 함수들 (POST 방식 지원)
 
@@ -2433,20 +2389,45 @@
             return currentDashboardData;
         };
 
-        console.log('🔧 배포 서버 연동 대시보드 초기화 완료');
-        console.log('📋 사용 가능한 함수들:');
-        console.log('  🔹 내부 함수:');
-        console.log('    - displayDashboard(corpCode, startYear, endYear): 대시보드 표시');
-        console.log('    - testDashboard(corpCode): 테스트용 대시보드 표시');
-        console.log('    - testChat(message): 테스트용 채팅');
-        console.log('  🌐 외부 연동 함수:');
-        console.log('    - window.onCompanySelected(corpCode): 팝업에서 기업 선택');
-        console.log('    - window.startChatWithCompany(corpCode): 기업 분석 시작');
-        console.log('    - window.getCurrentCompanyData(): 현재 기업 데이터 반환');
-        console.log(`🌐 배포된 서버: ${API_BASE_URL}`);
+        console.log('대시보드 초기화 완료');
+        console.log('사용 가능한 함수들:');
+        console.log('  - displayDashboard(corpCode, startYear, endYear): 대시보드 표시');
+        console.log('  - window.onCompanySelected(corpCode): 팝업에서 기업 선택');
+        console.log('  - window.startChatWithCompany(corpCode): 기업 분석 시작');
+        console.log('  - window.getCurrentCompanyData(): 현재 기업 데이터 반환');
+        // 페이지 초기화
+        async function initializePage() {
+            console.log('🤖 대시보드 페이지 초기화 시작');
+            
+            // 환경 설정 로드
+            await loadConfig();
+            console.log(`🌐 배포된 서버: ${API_BASE_URL}`);
+            console.log(`🗄️ DB 서버: ${DB_BASE_URL}`);
+            
+            // 기존 초기화 로직 실행
+            await initializeDashboard();
+            
+            console.log('🤖 대시보드 페이지 초기화 완료');
+        }
+        
+        // 대시보드 초기화 함수
+        async function initializeDashboard() {
+            // 기존 초기화 코드들을 여기로 이동
+            // URL에서 기업 정보 추출
+            const urlParams = new URLSearchParams(window.location.search);
+            const corpCode = urlParams.get('corp_code');
+            const companyName = urlParams.get('company_name');
+            
+            if (corpCode && companyName) {
+                console.log(`🏢 URL에서 기업 정보 감지: ${companyName} (${corpCode})`);
+                await loadCompanyDashboard(corpCode, companyName);
+            }
+        }
 
         // 🏠 홈으로 돌아가기 버튼 이벤트
         document.addEventListener('DOMContentLoaded', function() {
+            // 페이지 초기화 실행
+            initializePage();
             const homeButton = document.querySelector('.ai-badge');
             if (homeButton) {
                 homeButton.addEventListener('click', function() {
